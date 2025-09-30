@@ -3,7 +3,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.sql.*;
 
-public class PassbookPage extends JFrame {
+ class PassbookPage extends JFrame {
     PassbookPage(String username) {
         Font titleFont = new Font("Futura", Font.BOLD, 40);
         Font tableFont = new Font("Calibri", Font.PLAIN, 18);
