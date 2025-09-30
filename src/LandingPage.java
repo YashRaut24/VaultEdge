@@ -6,6 +6,17 @@ class LandingPage extends JFrame {
         Font f = new Font("futura", Font.BOLD, 40);
         Font f2 = new Font("Calibri", Font.PLAIN, 22);
 
+        // Load the image and scale it to frame size
+        ImageIcon original = new ImageIcon("images/LandingPageImage.jpg");
+        Image scaled = original.getImage().getScaledInstance(800, 550, Image.SCALE_SMOOTH);
+        ImageIcon bg = new ImageIcon(scaled);
+
+        // Create a JLabel for background
+        JLabel background = new JLabel(bg);
+        background.setBounds(0, 0, 800, 550);
+        background.setLayout(null); // allows adding components on top
+
+        // Components
         JLabel l1 = new JLabel("Virtual Banking System", JLabel.CENTER);
         JButton b1 = new JButton("Admin");
         JButton b2 = new JButton("Existing Customer");
@@ -16,48 +27,34 @@ class LandingPage extends JFrame {
         b2.setFont(f2);
         b3.setFont(f2);
 
-        Container c = getContentPane();
-        c.setLayout(null);
-
+        // Set positions
         l1.setBounds(150, 50, 500, 50);
         b1.setBounds(300, 150, 200, 50);
         b2.setBounds(300, 230, 200, 50);
         b3.setBounds(300, 310, 200, 50);
 
-        c.add(l1);
-        c.add(b1);
-        c.add(b2);
-        c.add(b3);
+        // Add components to background
+        background.add(l1);
+        background.add(b1);
+        background.add(b2);
+        background.add(b3);
 
-        b1.addActionListener(
-                a->{
-                    new AdminLogin();//Admin Login
-                    dispose();
-                }
-        );
+        // Add background to frame
+        add(background);
 
-        b2.addActionListener(
-                a->{
-                    new ExistingLoginPage();//Existing customer login
-                    dispose();
-                }
-        );
+        // Button actions
+        b1.addActionListener(a -> { new AdminLogin(); dispose(); });
+        b2.addActionListener(a -> { new ExistingLoginPage(); dispose(); });
+        b3.addActionListener(a -> { new NewloginPage(); dispose(); });
 
-        b3.addActionListener(
-                a->{
-                    new NewloginPage();//New Customer login
-                    dispose();
-                }
-        );
-
-        setVisible(true);
-        setSize(800, 550);
+        setSize(700, 550);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setTitle("Landing Page");
+        setVisible(true);
     }
 
     public static void main(String[] args) {
-        LandingPage a = new LandingPage();
+        new LandingPage();
     }
 }
