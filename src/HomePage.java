@@ -66,19 +66,19 @@ class HomePage extends JFrame {
 
         b4.addActionListener(
                 a->{
-                    new Transfer(username);
+                    new TransferPage(username);
                 }
         );
 
         b5.addActionListener(
                 a->{
-                    new Passbook(username);
+                    new PassbookPage(username);
                 }
         );
         b6.addActionListener(
                 a->
                 {
-                    new Landing();
+                    new LandingPage();
                     dispose();
                 }
         );

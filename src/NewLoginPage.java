@@ -105,7 +105,7 @@ class NewloginPage extends JFrame {
 
                                 pst.executeUpdate();
                                 JOptionPane.showMessageDialog(null, "Signup Successful");
-                                new Home(t1.getText());
+                                new HomePage(t1.getText());
                                 dispose();
                             }
                         } catch (Exception e) {

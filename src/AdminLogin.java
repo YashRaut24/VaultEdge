@@ -1,8 +1,8 @@
 import javax.swing.*;
 import java.awt.*;
 
-class Alogin extends JFrame {
-    Alogin() {
+class AdminLogin extends JFrame {
+    AdminLogin() {
         Font f = new Font("Futura", Font.BOLD, 40);
         Font f2 = new Font("Calibri", Font.PLAIN, 22);
 
@@ -47,7 +47,7 @@ class Alogin extends JFrame {
                     String s1 = new String(p1.getPassword());
                     if(s1.equals("pass")&& t1.getText().equals("admin"))
                     {
-                        new Adashboard();
+                        new AdminDashboard();
                         dispose();
                     }
                     else{
@@ -58,7 +58,7 @@ class Alogin extends JFrame {
 
         b2.addActionListener(
                 a->{
-                    new Landing();
+                    new LandingPage();
                     dispose();
                 }
         );
@@ -71,6 +71,6 @@ class Alogin extends JFrame {
     }
 
     public static void main(String[] args) {
-        new Alogin();
+        new AdminLogin();
     }
 }

@@ -2,7 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 
 class AdminPage extends JFrame {
-    Apage() {
+    AdminPage() {
         Font f = new Font("Futura", Font.BOLD, 40);
         Font f2 = new Font("Calibri", Font.PLAIN, 22);
 

@@ -31,21 +31,21 @@ class LandingPage extends JFrame {
 
         b1.addActionListener(
                 a->{
-                    new Alogin();//Admin Login
+                    new AdminLogin();//Admin Login
                     dispose();
                 }
         );
 
         b2.addActionListener(
                 a->{
-                    new Elogin();//Existing customer login
+                    new ExistingLoginPage();//Existing customer login
                     dispose();
                 }
         );
 
         b3.addActionListener(
                 a->{
-                    new Nlogin();//New Customer login
+                    new NewloginPage();//New Customer login
                     dispose();
                 }
         );

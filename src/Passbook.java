@@ -38,7 +38,7 @@ public class PassbookPage extends JFrame {
         backButton.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
         backButton.addActionListener(e ->
         {
-            new Home(username);
+            new HomePage(username);
             dispose();
         });
 

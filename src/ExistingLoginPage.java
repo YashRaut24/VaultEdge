@@ -63,7 +63,7 @@ class ExistingLoginPage extends JFrame {
                             if(rs.next())
                             {
                                 JOptionPane.showMessageDialog(null,"Sucessful");
-                                new Home(t1.getText());
+                                new HomePage(t1.getText());
                                 dispose();
                             }
                             else

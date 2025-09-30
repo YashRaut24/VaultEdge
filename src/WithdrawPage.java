@@ -108,7 +108,7 @@ class Withdraw extends JFrame
         b2.addActionListener(
                 a->
                 {
-                    new Home(username);
+                    new HomePage(username);
                     dispose();
                 }
         );
