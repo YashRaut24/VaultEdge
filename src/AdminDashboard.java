@@ -3,8 +3,8 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.sql.*;
 
-class Adashboard extends JFrame {
-    Adashboard() {
+class AdminDashboard extends JFrame {
+    AdminDashboard() {
         Font titleFont = new Font("Futura", Font.BOLD, 40);
         Font tableFont = new Font("Calibri", Font.PLAIN, 18);
         Font buttonFont = new Font("Calibri", Font.BOLD, 20);
@@ -57,7 +57,7 @@ class Adashboard extends JFrame {
         b2.setFocusPainted(false);
         b2.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
         b2.addActionListener(e -> {
-            new Alogin();
+            new AdminLogin();
             dispose();
         });
 
@@ -149,6 +149,6 @@ class Adashboard extends JFrame {
     }
 
     public static void main(String[] args) {
-        new Adashboard();
+        new AdminDashboard();
     }
 }
