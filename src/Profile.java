@@ -53,7 +53,7 @@ class Profile extends JFrame {
                     String s1 = box.getSelectedItem().toString().toLowerCase();
                     String s2 = t1.getText();
                     String url = "jdbc:mysql://localhost:3306/3dec";
-                    try(Connection con = DriverManager.getConnection(url,"root","yrSQL#2405#"))
+                    try(Connection con = DriverManager.getConnection(url,"root","your_password"))
                     {
                         String sql = "update users set " + s1 + " = ? where username = ?";
                         try(PreparedStatement pst = con.prepareStatement(sql))

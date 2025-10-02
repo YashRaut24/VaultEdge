@@ -50,7 +50,7 @@ class DepositPage extends JFrame
                 {
                     double balance = 0.0;
                     String url = "jdbc:mysql://localhost:3306/3dec";
-                    try(Connection con = DriverManager.getConnection(url,"root","yrSQL#2405#"))
+                    try(Connection con = DriverManager.getConnection(url,"root","your_password"))
                     {
                         String sql = "select balance from users where username = ? ";
                         try(PreparedStatement pst =con.prepareStatement(sql))
@@ -80,7 +80,7 @@ class DepositPage extends JFrame
                     {
                         double amount = Double.parseDouble(s1);
                         double total = amount + balance;
-                        try(Connection con = DriverManager.getConnection(url,"root","yrSQL#2405#"))
+                        try(Connection con = DriverManager.getConnection(url,"root","your_password"))
                         {
                             String sql = "update users set balance = ? where username = ?";
                             try(PreparedStatement pst = con.prepareStatement(sql))
@@ -112,7 +112,7 @@ class DepositPage extends JFrame
     void updatePassbook(String username,String desc ,double amount, double balance)
     {
         String url = "jdbc:mysql://localhost:3306/3dec";
-        try(Connection con = DriverManager.getConnection(url,"root","yrSQL#2405#"))
+        try(Connection con = DriverManager.getConnection(url,"root","your_password"))
         {
             String sql = "insert into transactions(username,description,amount,balance) values(?,?,?,?)";
             try(PreparedStatement pst =con.prepareStatement(sql))

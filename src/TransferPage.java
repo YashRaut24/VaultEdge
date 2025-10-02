@@ -77,7 +77,7 @@ class TransferPage extends JFrame {
                     //Round 2
 
                     String url = "jdbc:mysql://localhost:3306/3dec";
-                    try(Connection con = DriverManager.getConnection(url,"root","PHW#84#jeor"))
+                    try(Connection con = DriverManager.getConnection(url,"root","your_password"))
                     {
                         String sql = "update users set balance = ? where username = ?";
                         try(PreparedStatement pst = con.prepareStatement(sql))
@@ -100,7 +100,7 @@ class TransferPage extends JFrame {
                     balance = fetchBalance(samnewala);
 
                     //Round 4
-                    try(Connection con = DriverManager.getConnection(url,"root","PHW#84#jeor"))
+                    try(Connection con = DriverManager.getConnection(url,"root","your_password"))
                     {
                         String sql = "update users set balance = ? where username = ?";
                         try(PreparedStatement pst = con.prepareStatement(sql))
@@ -131,7 +131,7 @@ class TransferPage extends JFrame {
     void updatePassbook(String username,String desc ,double amount, double balance)
     {
         String url = "jdbc:mysql://localhost:3306/3dec";
-        try(Connection con = DriverManager.getConnection(url,"root","PHW#84#jeor"))
+        try(Connection con = DriverManager.getConnection(url,"root","your_password"))
         {
             String sql = "insert into transactions(username,description,amount,balance) values(?,?,?,?)";
             try(PreparedStatement pst =con.prepareStatement(sql))
@@ -153,7 +153,7 @@ class TransferPage extends JFrame {
     double fetchBalance(String username){
         double balance = 0.0;
         String url = "jdbc:mysql://localhost:3306/3dec";
-        try(Connection con = DriverManager.getConnection(url,"root","PHW#84#jeor"))
+        try(Connection con = DriverManager.getConnection(url,"root","your_password"))
         {
             String sql = "select balance from users where username = ? ";
             try(PreparedStatement pst =con.prepareStatement(sql))
