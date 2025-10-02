@@ -62,7 +62,7 @@ class LandingPage extends JFrame {
             }
         };
         backgroundImagePanel.setBounds(0, 0, 900, 600);
-        add(backgroundImagePanel);
+        setContentPane(backgroundImagePanel);
 
         // Title label
         JLabel title = new JLabel("VaultEdge", SwingConstants.CENTER);
