@@ -97,7 +97,7 @@ class ExistingLoginPage extends JFrame {
         // Action listeners
         submitButton.addActionListener(a -> {
             String url = "jdbc:mysql://localhost:3306/3dec";
-            try (Connection con = DriverManager.getConnection(url, "root", "yrSQL#2405#")) {
+            try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
                 String sql = "select * from users where username = ? and password=?";
                 try (PreparedStatement pst = con.prepareStatement(sql)) {
                     pst.setString(1, usernameField.getText());
