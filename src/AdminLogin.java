@@ -67,6 +67,7 @@ class AdminLogin extends JFrame {
         backgroundPanel.setBounds(0, 0, 450, 500);
         setContentPane(backgroundPanel);
 
+
         // Title label
         JLabel title = new JLabel("Admin Access", SwingConstants.CENTER);
         title.setFont(new Font("Segoe UI", Font.BOLD, 32));
