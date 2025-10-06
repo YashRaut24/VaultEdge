@@ -2,146 +2,177 @@ import javax.swing.*;
 import java.awt.*;
 import java.sql.*;
 
-class Withdraw extends JFrame
-{
-    Withdraw(String username)
-    {
-        Font f = new Font("Futura", Font.BOLD, 40);
-        Font f2 = new Font("Calibri", Font.PLAIN, 22);
+class Withdraw extends JFrame {
 
-        JLabel title = new JLabel("Withdraw Money", JLabel.CENTER);
-        JLabel label = new JLabel("Enter Amount:");
-        JTextField t1 = new JTextField(10);
-        JButton b1 = new JButton("Withdraw");
-        JButton b2 = new JButton("Back");
+    // Styled label
+    private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        label.setForeground(new Color(200, 240, 255));
+        label.setBounds(x, y, width, height);
+        panel.add(label);
+        return label;
+    }
 
-        title.setFont(f);
-        label.setFont(f2);
-        t1.setFont(f2);
-        b1.setFont(f2);
-        b2.setFont(f2);
+    // Styled text field
+    private JTextField createTextField(int x, int y, int width, int height, JPanel panel) {
+        JTextField field = new JTextField();
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        field.setBackground(new Color(15, 30, 40));
+        field.setForeground(new Color(220, 235, 245));
+        field.setCaretColor(new Color(0, 230, 255));
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0, 230, 255), 1),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+        field.setBounds(x, y, width, height);
+        panel.add(field);
+        return field;
+    }
 
-        Container c = getContentPane();
-        c.setLayout(null);
+    // Styled button
+    private JButton createButton(String text, int x, int y, int width, int height, JPanel panel) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        button.setForeground(Color.WHITE);
+        button.setOpaque(false);
+        button.setContentAreaFilled(false);
+        button.setBorder(BorderFactory.createLineBorder(new Color(0, 230, 255), 2));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setBounds(x, y, width, height);
+        panel.add(button);
+        return button;
+    }
 
-        title.setBounds(200, 30, 400, 50);
-        label.setBounds(250, 120, 300, 30);
-        t1.setBounds(250, 160, 300, 30);
-        b1.setBounds(300, 220, 200, 40);
-        b2.setBounds(300, 280, 200, 40);
+    Withdraw(String username) {
+        // Background panel
+        JPanel backgroundPanel = new JPanel(null);
+        backgroundPanel.setBackground(new Color(8, 20, 30));
+        setContentPane(backgroundPanel);
 
-        c.add(title);
-        c.add(label);
-        c.add(t1);
-        c.add(b1);
-        c.add(b2);
+        // Title
+        JLabel title = new JLabel("Withdraw Money", SwingConstants.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        title.setForeground(new Color(0, 230, 255));
+        title.setBounds(0, 20, 800, 40);
+        backgroundPanel.add(title);
 
-        b1.addActionListener(
-                a-> {
-                    double balance = 0.0;
-                    double wlimit = 0.0;
-                    String url = "jdbc:mysql://localhost:3306/3dec";
-                    try(Connection con = DriverManager.getConnection(url,"root","your_password"))
-                    {
-                        String sql = "select balance,wlimit from users where username = ? ";
-                        try(PreparedStatement pst =con.prepareStatement(sql))
-                        {
-                            pst.setString (1,username);
-                            ResultSet rs = pst.executeQuery();
-                            if(rs.next())
-                            {
-                                balance = rs.getDouble("balance");
-                                wlimit = rs.getDouble("wlimit");
-                            }
-                        }
-                    }
-                    catch(Exception e)
-                    {
-                        JOptionPane.showMessageDialog(null,e.getMessage());
-                    }
+        // Label and input
+        createLabel("Enter Amount:", 250, 120, 200, 30, backgroundPanel);
+        JTextField amountField = createTextField(250, 160, 300, 30, backgroundPanel);
 
-                    String s1 = t1.getText();
-                    if(s1.isEmpty())
-                    {
-                        JOptionPane.showMessageDialog(null,"Please Enter amount");
-                    }
-                    else
-                    {
-                        double newAmount = Double.parseDouble(s1);
+        // Buttons
+        JButton withdrawBtn = createButton("Withdraw", 250, 220, 120, 42, backgroundPanel);
+        JButton backBtn = createButton("Back", 430, 220, 120, 42, backgroundPanel);
 
-                        if(newAmount>balance)
-                        {
-                            JOptionPane.showMessageDialog(null,"Amount is greater than balance");
-                        }
-                        else if(newAmount>wlimit)
-                        {
-                            JOptionPane.showMessageDialog(null,"Limit exceeded");
-                        }
-                        else
-                        {
-                            double result = balance - newAmount;
-                            try(Connection con = DriverManager.getConnection(url,"root","your_password"))
-                            {
-                                String sql = "update users set balance = ? where username = ?";
-                                try(PreparedStatement pst = con.prepareStatement(sql))
-                                {
-                                    pst.setDouble(1,result);
-                                    pst.setString(2,username);
+        // Button actions
+        backBtn.addActionListener(a -> {
+            new HomePage(username);
+            dispose();
+        });
 
-                                    pst.executeUpdate();
-                                    JOptionPane.showMessageDialog(null,"Successfully Withdrawn");
-                                    updatePassbook(username,"withdrawn",balance-result,result);
-                                    t1.setText("");
-                                }
+        withdrawBtn.addActionListener(a -> {
+            double balance = fetchBalance(username);
+            double wlimit = fetchLimit(username);
 
-                            }
-                            catch(Exception e)
-                            {
-                                JOptionPane.showInputDialog(null,e.getMessage());
-                            }
+            String amtStr = amountField.getText();
+            if (amtStr.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Please enter an amount");
+                return;
+            }
 
-                        }
-                    }
-                }
-        );
+            double amount;
+            try {
+                amount = Double.parseDouble(amtStr);
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(null, "Invalid amount");
+                return;
+            }
 
-        b2.addActionListener(
-                a->
-                {
-                    new HomePage(username);
-                    dispose();
-                }
-        );
-        setVisible(true);
+            if (amount > balance) {
+                JOptionPane.showMessageDialog(null, "Amount is greater than balance");
+            } else if (amount > wlimit) {
+                JOptionPane.showMessageDialog(null, "Withdrawal limit exceeded");
+            } else {
+                updateBalance(username, balance - amount);
+                updatePassbook(username, "Withdrawn", amount, balance - amount);
+                JOptionPane.showMessageDialog(null, "Successfully Withdrawn");
+                amountField.setText("");
+            }
+        });
+
+        // Frame settings
+        setTitle("VaultEdge - Withdraw Money");
         setSize(800, 550);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setTitle("Withdraw Money");
+        setVisible(true);
     }
 
-    void updatePassbook(String username,String desc ,double amount, double balance)
-    {
+    private double fetchBalance(String username) {
+        double balance = 0.0;
         String url = "jdbc:mysql://localhost:3306/3dec";
-        try(Connection con = DriverManager.getConnection(url,"root","your_password"))
-        {
-            String sql = "insert into transactions(username,description,amount,balance) values(?,?,?,?)";
-            try(PreparedStatement pst =con.prepareStatement(sql))
-            {
-                pst.setString (1,username);
-                pst.setString(2,desc);
-                pst.setDouble(3,amount);
-                pst.setDouble(4,balance);
+        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+            String sql = "SELECT balance FROM users WHERE username = ?";
+            try (PreparedStatement pst = con.prepareStatement(sql)) {
+                pst.setString(1, username);
+                ResultSet rs = pst.executeQuery();
+                if (rs.next()) balance = rs.getDouble("balance");
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
+        }
+        return balance;
+    }
+
+    private double fetchLimit(String username) {
+        double limit = 0.0;
+        String url = "jdbc:mysql://localhost:3306/3dec";
+        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+            String sql = "SELECT wlimit FROM users WHERE username = ?";
+            try (PreparedStatement pst = con.prepareStatement(sql)) {
+                pst.setString(1, username);
+                ResultSet rs = pst.executeQuery();
+                if (rs.next()) limit = rs.getDouble("wlimit");
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
+        }
+        return limit;
+    }
+
+    private void updateBalance(String username, double balance) {
+        String url = "jdbc:mysql://localhost:3306/3dec";
+        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+            String sql = "UPDATE users SET balance = ? WHERE username = ?";
+            try (PreparedStatement pst = con.prepareStatement(sql)) {
+                pst.setDouble(1, balance);
+                pst.setString(2, username);
                 pst.executeUpdate();
             }
-        }
-        catch(Exception e)
-        {
-            JOptionPane.showMessageDialog(null,e.getMessage());
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
         }
     }
 
+    private void updatePassbook(String username, String desc, double amount, double balance) {
+        String url = "jdbc:mysql://localhost:3306/3dec";
+        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+            String sql = "INSERT INTO transactions(username, description, amount, balance) VALUES(?,?,?,?)";
+            try (PreparedStatement pst = con.prepareStatement(sql)) {
+                pst.setString(1, username);
+                pst.setString(2, desc);
+                pst.setDouble(3, amount);
+                pst.setDouble(4, balance);
+                pst.executeUpdate();
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
+        }
+    }
 
     public static void main(String[] args) {
-        new Withdraw("");
+        new Withdraw("User");
     }
 }
