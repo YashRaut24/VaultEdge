@@ -4,18 +4,86 @@ import java.awt.*;
 import java.sql.*;
 
 class AdminDashboard extends JFrame {
+
+    // Styled label
+    private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        label.setForeground(new Color(200, 240, 255));
+        label.setBounds(x, y, width, height);
+        panel.add(label);
+        return label;
+    }
+
+    // Styled text field
+    private JTextField createTextField(int x, int y, int width, int height, JPanel panel) {
+        JTextField field = new JTextField();
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        field.setBackground(new Color(15, 30, 40));
+        field.setForeground(new Color(220, 235, 245));
+        field.setCaretColor(new Color(0, 230, 255));
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0, 230, 255), 1),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+        field.setBounds(x, y, width, height);
+        panel.add(field);
+        return field;
+    }
+
+    // Styled button
+    private JButton createButton(String text, int x, int y, int width, int height, JPanel panel, Color borderColor, Color textColor, Color bgColor) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        button.setForeground(textColor);
+        button.setOpaque(false);
+        button.setContentAreaFilled(false);
+        button.setBorder(BorderFactory.createLineBorder(borderColor, 2));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setBounds(x, y, width, height);
+        if (bgColor != null) {
+            button.setBackground(bgColor);
+            button.setOpaque(true);
+        }
+        panel.add(button);
+        return button;
+    }
+
     AdminDashboard() {
-        Font titleFont = new Font("Futura", Font.BOLD, 40);
-        Font tableFont = new Font("Calibri", Font.PLAIN, 18);
-        Font buttonFont = new Font("Calibri", Font.BOLD, 20);
 
-        JLabel title = new JLabel("Admin Dashboard", JLabel.CENTER);
-        title.setFont(titleFont);
-        title.setForeground(Color.WHITE);
-        title.setOpaque(true);
-        title.setBackground(new Color(0, 102, 204));
-        title.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        // Main background
+        JPanel backgroundPanel = new JPanel(null);
+        backgroundPanel.setBackground(new Color(8, 20, 30));
+        setContentPane(backgroundPanel);
 
+        // Title
+        JLabel title = new JLabel("Admin Dashboard", SwingConstants.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        title.setForeground(new Color(0, 230, 255));
+        title.setBounds(0, 20, 900, 40);
+        backgroundPanel.add(title);
+
+        // Filter labels and fields
+        createLabel("Min Balance:", 50, 80, 100, 25, backgroundPanel);
+        JTextField minField = createTextField(160, 80, 150, 30, backgroundPanel);
+
+        createLabel("Max Balance:", 350, 80, 100, 25, backgroundPanel);
+        JTextField maxField = createTextField(460, 80, 150, 30, backgroundPanel);
+
+        // Filter button
+        JButton filterButton = createButton("Filter", 650, 80, 120, 30, backgroundPanel,
+                new Color(0, 230, 255), Color.WHITE, new Color(0, 153, 76));
+
+        // Back button
+        JButton backButton = createButton("Back", 780, 500, 100, 35, backgroundPanel,
+                new Color(0, 230, 255), Color.WHITE, new Color(255, 51, 51));
+        backButton.addActionListener(e -> {
+            new AdminLogin();
+            dispose();
+        });
+
+        // Table
         String[] columnNames = {"Username", "Balance", "Phone", "Email", "Gender", "WLimit"};
         DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -25,123 +93,69 @@ class AdminDashboard extends JFrame {
         };
         JTable table = new JTable(tableModel);
         table.getTableHeader().setReorderingAllowed(false);
-        table.setFont(tableFont);
-        table.setRowHeight(30);
-        table.getTableHeader().setFont(new Font("Calibri", Font.BOLD, 18));
-        table.getTableHeader().setBackground(new Color(0, 102, 204));
-        table.getTableHeader().setForeground(Color.WHITE);
-        table.setGridColor(new Color(224, 224, 224));
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        table.setRowHeight(25);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 16));
+        table.getTableHeader().setBackground(new Color(0, 230, 255));
+        table.getTableHeader().setForeground(Color.BLACK);
+        table.setGridColor(new Color(50, 50, 50));
 
         JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBounds(50, 130, 830, 350);
+        backgroundPanel.add(scrollPane);
 
-        JTextField t1 = new JTextField(10);
-        JTextField t2 = new JTextField(10);
+        // Database connection and table loading
+        String url = EnvLoader.get("DB_URL");
+        String user = EnvLoader.get("DB_USER");
+        String password = EnvLoader.get("DB_PASSWORD");
 
-        JButton b1 = new JButton("Filter");
-        b1.setFont(buttonFont);
-        b1.setBackground(new Color(0, 153, 76));
-        b1.setForeground(Color.WHITE);
-
-        JPanel filterPanel = new JPanel();
-        filterPanel.setBackground(new Color(224, 224, 224));
-        filterPanel.add(new JLabel("Min Balance:"));
-        filterPanel.add(t1);
-        filterPanel.add(new JLabel("Max Balance:"));
-        filterPanel.add(t2);
-        filterPanel.add(b1);
-
-        JButton b2 = new JButton("Back");
-        b2.setFont(buttonFont);
-        b2.setForeground(Color.WHITE);
-        b2.setBackground(new Color(255, 51, 51));
-        b2.setFocusPainted(false);
-        b2.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
-        b2.addActionListener(e -> {
-            new AdminLogin();
-            dispose();
+        filterButton.addActionListener(a -> {
+            tableModel.setRowCount(0);
+            double min = minField.getText().isEmpty() ? 0 : Double.parseDouble(minField.getText());
+            double max = maxField.getText().isEmpty() ? Double.MAX_VALUE : Double.parseDouble(maxField.getText());
+            try (Connection con = DriverManager.getConnection(url, user, password)) {
+                String sql = "SELECT * FROM users WHERE balance BETWEEN ? AND ?";
+                try (PreparedStatement pst = con.prepareStatement(sql)) {
+                    pst.setDouble(1, min);
+                    pst.setDouble(2, max);
+                    ResultSet rs = pst.executeQuery();
+                    while (rs.next()) {
+                        tableModel.addRow(new Object[]{
+                                rs.getString("username"),
+                                rs.getDouble("balance"),
+                                rs.getString("phone"),
+                                rs.getString("email"),
+                                rs.getString("gender"),
+                                rs.getDouble("wlimit")
+                        });
+                    }
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null, e.getMessage());
+            }
         });
 
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBackground(new Color(0, 102, 204));
-        topPanel.add(title, BorderLayout.CENTER);
-
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.setBackground(new Color(224, 224, 224));
-        bottomPanel.add(b2);
-
-        JPanel centerPanel = new JPanel(new BorderLayout(20, 20));
-        centerPanel.add(filterPanel, BorderLayout.NORTH);
-        centerPanel.add(scrollPane, BorderLayout.CENTER);
-
-        Container c = getContentPane();
-        c.setLayout(new BorderLayout(20, 20));
-        c.add(topPanel, BorderLayout.NORTH);
-        c.add(centerPanel, BorderLayout.CENTER);
-        c.add(bottomPanel, BorderLayout.SOUTH);
-
-        b1.addActionListener(
-                a->{
-                    tableModel.setRowCount(0);
-                    String str1 = t1.getText();
-                    String str2 = t2.getText();
-                    double min,max;
-
-                    if(str1.isEmpty()){
-                        min = 0.0;
-                    }else{
-                        min = Double.parseDouble(str1);
-                    }
-                    if(str2.isEmpty()) {
-                        max = Double.MAX_VALUE;
-                    }else{
-                        max = Double.parseDouble(str2);
-                    }
-                    String url = "jdbc:mysql://localhost:3306/3dec";
-                    try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
-                        String sql = "select * from users where balance between "+min+" and " +max;
-                        try (PreparedStatement pst = con.prepareStatement(sql)) {
-
-                            ResultSet rs = pst.executeQuery();
-                            while(rs.next()){
-                                String s1 = rs.getString("username");
-                                double d1 = rs.getDouble("balance");
-                                String s2 = rs.getString("phone");
-                                String s3 = rs.getString("email");
-                                String s4 = rs.getString("gender");
-                                double d2 = rs.getDouble("wlimit");
-
-                                tableModel.addRow(new Object[]{s1,s2,s3,s4,d1,d2});
-                            }
-
-                        }
-                    } catch (Exception e) {
-                        JOptionPane.showMessageDialog(null, e.getMessage());
-                    }
-                }
-        );
-
-        String url = "jdbc:mysql://localhost:3306/3dec";
-        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
-            String sql = "select balance from users where username=?";
+        // Load table initially
+        try (Connection con = DriverManager.getConnection(url, user, password)) {
+            String sql = "SELECT * FROM users";
             try (PreparedStatement pst = con.prepareStatement(sql)) {
-
                 ResultSet rs = pst.executeQuery();
-                while(rs.next()){
-                    String s1 = rs.getString("username");
-                    double d1 = rs.getDouble("balance");
-                    String s2 = rs.getString("phone");
-                    String s3 = rs.getString("email");
-                    String s4 = rs.getString("gender");
-                    double d2 = rs.getDouble("wlimit");
-
-                    tableModel.addRow(new Object[]{s1,s2,s3,s4,d1,d2});
+                while (rs.next()) {
+                    tableModel.addRow(new Object[]{
+                            rs.getString("username"),
+                            rs.getDouble("balance"),
+                            rs.getString("phone"),
+                            rs.getString("email"),
+                            rs.getString("gender"),
+                            rs.getDouble("wlimit")
+                    });
                 }
-
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null, e.getMessage());
         }
-        setTitle("Admin Dashboard");
+
+        setTitle("VaultEdge - Admin Dashboard");
         setSize(900, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
