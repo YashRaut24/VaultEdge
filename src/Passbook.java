@@ -3,83 +3,93 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.sql.*;
 
- class PassbookPage extends JFrame {
+class PassbookPage extends JFrame {
+
+    // Styled label
+    private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        label.setForeground(new Color(200, 240, 255));
+        label.setBounds(x, y, width, height);
+        panel.add(label);
+        return label;
+    }
+
+    // Styled button
+    private JButton createButton(String text, int x, int y, int width, int height, JPanel panel) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        button.setForeground(Color.WHITE);
+        button.setOpaque(false);
+        button.setContentAreaFilled(false);
+        button.setBorder(BorderFactory.createLineBorder(new Color(0, 230, 255), 2));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setBounds(x, y, width, height);
+        panel.add(button);
+        return button;
+    }
+
     PassbookPage(String username) {
-        Font titleFont = new Font("Futura", Font.BOLD, 40);
-        Font tableFont = new Font("Calibri", Font.PLAIN, 18);
-        Font buttonFont = new Font("Calibri", Font.BOLD, 20);
+        // Background panel
+        JPanel backgroundPanel = new JPanel(null);
+        backgroundPanel.setBackground(new Color(8, 20, 30));
+        setContentPane(backgroundPanel);
 
-        JLabel title = new JLabel("Passbook", JLabel.CENTER);
-        title.setFont(titleFont);
-        title.setForeground(new Color(255, 255, 255));
-        title.setOpaque(true);
-        title.setBackground(new Color(0, 102, 204));
-        title.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        // Title
+        JLabel title = new JLabel("Passbook", SwingConstants.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        title.setForeground(new Color(0, 230, 255));
+        title.setBounds(0, 20, 800, 40);
+        backgroundPanel.add(title);
 
+        // Table setup
         String[] columnNames = {"Date & Time", "Description", "Amount", "Balance"};
         DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
         JTable table = new JTable(tableModel);
-        table.setFont(tableFont);
-        table.setRowHeight(30);
-        table.getTableHeader().setFont(new Font("Calibri", Font.BOLD, 18));
-        table.getTableHeader().setBackground(new Color(0, 102, 204));
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        table.setRowHeight(28);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 16));
+        table.getTableHeader().setBackground(new Color(0, 230, 255));
         table.getTableHeader().setForeground(Color.WHITE);
-        table.setGridColor(new Color(224, 224, 224));
+        table.setGridColor(new Color(80, 80, 80));
+        table.setBackground(new Color(15, 30, 40));
+        table.setForeground(new Color(220, 235, 245));
+        table.setSelectionBackground(new Color(0, 230, 255, 80));
+        table.setSelectionForeground(Color.WHITE);
 
         JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBounds(50, 80, 700, 350);
+        scrollPane.getViewport().setBackground(new Color(15, 30, 40));
+        backgroundPanel.add(scrollPane);
 
-
-
-        JButton backButton = new JButton("Back");
-        backButton.setFont(buttonFont);
-        backButton.setForeground(Color.WHITE);
-        backButton.setBackground(new Color(255, 51, 51));
-        backButton.setFocusPainted(false);
-        backButton.setBorder(BorderFactory.createEmptyBorder(10, 25, 10, 25));
-        backButton.addActionListener(e ->
-        {
+        // Back button
+        JButton backButton = createButton("Back", 320, 450, 160, 42, backgroundPanel);
+        backButton.addActionListener(e -> {
             new HomePage(username);
             dispose();
         });
 
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBackground(new Color(0, 102, 204));
-        topPanel.add(title, BorderLayout.CENTER);
-
-        JPanel bottomPanel = new JPanel();
-        bottomPanel.setBackground(new Color(224, 224, 224));
-        bottomPanel.add(backButton);
-
-        Container c = getContentPane();
-        c.setLayout(new BorderLayout(20, 20));
-        c.add(topPanel, BorderLayout.NORTH);
-        c.add(scrollPane, BorderLayout.CENTER);
-        c.add(bottomPanel, BorderLayout.SOUTH);
-
-        String url = "jdbc:mysql://localhost:3306/3dec";
-        try(Connection con = DriverManager.getConnection(url,"root","your_password"))
-        {
-            String sql = "select * from transactions where username=? order by date desc";
-            try(PreparedStatement pst = con.prepareStatement(sql))
-            {
-                pst.setString(1,username);
+        // Fetch data from DB
+        try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/3dec", "root", "your_password")) {
+            String sql = "SELECT * FROM transactions WHERE username=? ORDER BY date DESC";
+            try (PreparedStatement pst = con.prepareStatement(sql)) {
+                pst.setString(1, username);
                 ResultSet rs = pst.executeQuery();
-
-                while(rs.next()){
-                    String s1 = rs.getString("date");
-                    String s2 = rs.getString("description");
-                    double d1 = rs.getDouble("amount");
-                    double d2 = rs.getDouble("balance");
-
-                    tableModel.addRow(new Object[]{s1,s2,d1,d2});
+                while (rs.next()) {
+                    String date = rs.getString("date");
+                    String desc = rs.getString("description");
+                    double amount = rs.getDouble("amount");
+                    double balance = rs.getDouble("balance");
+                    tableModel.addRow(new Object[]{date, desc, amount, balance});
                 }
             }
-        }
-        catch(Exception e){
-            JOptionPane.showMessageDialog(null,e.getMessage());
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
         }
 
-        setTitle("Passbook");
+        // Frame settings
+        setTitle("VaultEdge - Passbook");
         setSize(800, 550);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -87,6 +97,6 @@ import java.sql.*;
     }
 
     public static void main(String[] args) {
-        new PassbookPage("Yash24");
+        new PassbookPage("User");
     }
 }
