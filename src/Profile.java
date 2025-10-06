@@ -4,103 +4,123 @@ import java.sql.*;
 
 class Profile extends JFrame {
 
-    String result ="";
+    // Styled label
+    private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        label.setForeground(new Color(200, 240, 255));
+        label.setBounds(x, y, width, height);
+        panel.add(label);
+        return label;
+    }
+
+    // Styled text field
+    private JTextField createTextField(int x, int y, int width, int height, JPanel panel) {
+        JTextField field = new JTextField();
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        field.setBackground(new Color(15, 30, 40));
+        field.setForeground(new Color(220, 235, 245));
+        field.setCaretColor(new Color(0, 230, 255));
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0, 230, 255), 1),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+        field.setBounds(x, y, width, height);
+        panel.add(field);
+        return field;
+    }
+
+    // Styled combo box
+    private JComboBox<String> createComboBox(String[] items, int x, int y, int width, int height, JPanel panel) {
+        JComboBox<String> box = new JComboBox<>(items);
+        box.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        box.setBackground(new Color(15, 30, 40));
+        box.setForeground(new Color(220, 235, 245));
+        box.setBounds(x, y, width, height);
+        panel.add(box);
+        return box;
+    }
+
+    // Styled button
+    private JButton createButton(String text, int x, int y, int width, int height, JPanel panel) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        button.setForeground(Color.WHITE);
+        button.setOpaque(false);
+        button.setContentAreaFilled(false);
+        button.setBorder(BorderFactory.createLineBorder(new Color(0, 230, 255), 2));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setBounds(x, y, width, height);
+        panel.add(button);
+        return button;
+    }
+
     Profile(String username) {
-        Font f = new Font("Futura", Font.BOLD, 35);
-        Font f2 = new Font("Calibri", Font.PLAIN, 20);
+        // Background panel
+        JPanel backgroundPanel = new JPanel(null);
+        backgroundPanel.setBackground(new Color(8, 20, 30));
+        setContentPane(backgroundPanel);
 
-        JLabel title = new JLabel("Profile Settings", JLabel.CENTER);
-        title.setFont(f);
+        // Title
+        JLabel title = new JLabel("Profile Settings", SwingConstants.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        title.setForeground(new Color(0, 230, 255));
+        title.setBounds(0, 20, 800, 40);
+        backgroundPanel.add(title);
 
-        JLabel l1 = new JLabel("Select Field to Update:");
-        JComboBox<String> box = new JComboBox<>(new String[]{"Username", "Password", "Phone", "Email"});
+        // Labels and inputs
+        createLabel("Select Field to Update:", 200, 100, 200, 30, backgroundPanel);
+        JComboBox<String> fieldBox = createComboBox(new String[]{"Username", "Password", "Phone", "Email"}, 400, 100, 200, 30, backgroundPanel);
 
-        JLabel l2 = new JLabel("Enter New Value:");
-        JTextField t1 = new JTextField(15);
+        createLabel("Enter New Value:", 200, 160, 200, 30, backgroundPanel);
+        JTextField newValueField = createTextField(400, 160, 200, 30, backgroundPanel);
 
-        JButton b1 = new JButton("Update");
-        JButton b2 = new JButton("Back");
+        // Buttons
+        JButton updateBtn = createButton("Update", 250, 220, 120, 42, backgroundPanel);
+        JButton backBtn = createButton("Back", 400, 220, 120, 42, backgroundPanel);
 
-        l1.setFont(f2);
-        box.setFont(f2);
-        l2.setFont(f2);
-        t1.setFont(f2);
-        b1.setFont(f2);
-        b2.setFont(f2);
-
-        Container c = getContentPane();
-        c.setLayout(null);
-
-        title.setBounds(250, 20, 300, 40);
-        l1.setBounds(200, 100, 200, 30);
-        box.setBounds(400, 100, 200, 30);
-        l2.setBounds(200, 160, 200, 30);
-        t1.setBounds(400, 160, 200, 30);
-        b1.setBounds(250, 220, 120, 40);
-        b2.setBounds(400, 220, 120, 40);
-
-        c.add(title);
-        c.add(l1);
-        c.add(box);
-        c.add(l2);
-        c.add(t1);
-        c.add(b1);
-        c.add(b2);
-
-
-        b1.addActionListener(
-                a-> {
-                    String s1 = box.getSelectedItem().toString().toLowerCase();
-                    String s2 = t1.getText();
-                    String url = "jdbc:mysql://localhost:3306/3dec";
-                    try(Connection con = DriverManager.getConnection(url,"root","your_password"))
-                    {
-                        String sql = "update users set " + s1 + " = ? where username = ?";
-                        try(PreparedStatement pst = con.prepareStatement(sql))
-                        {
-                            if(s2.isEmpty())
-                            {
-                                JOptionPane.showMessageDialog(null,"cannot be empty");
-                                return;
-                            }
-
-                            if(s1.equals("username"))
-                            {
-                                dispose();
-                                new Profile(s2);
-
-
-                            }
-                            pst.setString(1,s2);
-                            pst.setString(2,username);
-                            pst.executeUpdate();
-                            t1.setText("");
-                        }
-                    }
-                    catch(Exception e)
-                    {
-                        JOptionPane.showMessageDialog(null,e.getMessage());
+        // Button actions
+        updateBtn.addActionListener(a -> {
+            String field = fieldBox.getSelectedItem().toString().toLowerCase();
+            String newValue = newValueField.getText();
+            if (newValue.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Value cannot be empty");
+                return;
+            }
+            try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/3dec", "root", "your_password")) {
+                String sql = "UPDATE users SET " + field + " = ? WHERE username = ?";
+                try (PreparedStatement pst = con.prepareStatement(sql)) {
+                    pst.setString(1, newValue);
+                    pst.setString(2, username);
+                    pst.executeUpdate();
+                    newValueField.setText("");
+                    JOptionPane.showMessageDialog(null, "Updated successfully!");
+                    // Refresh page if username changed
+                    if (field.equals("username")) {
+                        dispose();
+                        new Profile(newValue);
                     }
                 }
-        );
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null, e.getMessage());
+            }
+        });
 
-        b2.addActionListener(
-                a->
-                {
-                    new HomePage(username);
-                    dispose();
-                }
-        );
+        backBtn.addActionListener(a -> {
+            new HomePage(username);
+            dispose();
+        });
 
-
-        setVisible(true);
+        // Frame settings
+        setTitle("VaultEdge - Profile Settings");
         setSize(800, 550);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setTitle("Profile Settings");
+        setVisible(true);
     }
 
     public static void main(String[] args) {
-        new Profile("Yash24");
+        new Profile("User");
     }
 }
