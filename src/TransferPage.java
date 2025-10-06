@@ -1,183 +1,171 @@
 import javax.swing.*;
 import java.awt.*;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.sql.*;
 
 class TransferPage extends JFrame {
+
+    // Styled label
+    private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        label.setForeground(new Color(200, 240, 255));
+        label.setBounds(x, y, width, height);
+        panel.add(label);
+        return label;
+    }
+
+    // Styled text field
+    private JTextField createTextField(int x, int y, int width, int height, JPanel panel) {
+        JTextField field = new JTextField();
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        field.setBackground(new Color(15, 30, 40));
+        field.setForeground(new Color(220, 235, 245));
+        field.setCaretColor(new Color(0, 230, 255));
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0, 230, 255), 1),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+        field.setBounds(x, y, width, height);
+        panel.add(field);
+        return field;
+    }
+
+    // Styled button
+    private JButton createButton(String text, int x, int y, int width, int height, JPanel panel) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        button.setForeground(Color.WHITE);
+        button.setOpaque(false);
+        button.setContentAreaFilled(false);
+        button.setBorder(BorderFactory.createLineBorder(new Color(0, 230, 255), 2));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setBounds(x, y, width, height);
+        panel.add(button);
+        return button;
+    }
+
     TransferPage(String username) {
-        Font f = new Font("Futura", Font.BOLD, 30);
-        Font f2 = new Font("Calibri", Font.PLAIN, 18);
+        // Background panel
+        JPanel backgroundPanel = new JPanel(null);
+        backgroundPanel.setBackground(new Color(8, 20, 30));
+        setContentPane(backgroundPanel);
 
-        JLabel title = new JLabel("Transfer Funds", JLabel.CENTER);
-        JLabel l1 = new JLabel("Receiver:");
-        JTextField t1 = new JTextField(10);
+        // Title
+        JLabel title = new JLabel("Transfer Funds", SwingConstants.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        title.setForeground(new Color(0, 230, 255));
+        title.setBounds(0, 20, 800, 40);
+        backgroundPanel.add(title);
 
-        JLabel l2 = new JLabel("Amount:");
-        JTextField t2 = new JTextField(10);
+        // Labels and fields
+        createLabel("Receiver:", 200, 100, 150, 30, backgroundPanel);
+        JTextField receiverField = createTextField(400, 100, 200, 30, backgroundPanel);
 
-        JButton b1 = new JButton("Transfer");
-        JButton b2 = new JButton("Back");
+        createLabel("Amount:", 200, 160, 150, 30, backgroundPanel);
+        JTextField amountField = createTextField(400, 160, 200, 30, backgroundPanel);
 
-        title.setFont(f);
-        l1.setFont(f2);
-        t1.setFont(f2);
-        l2.setFont(f2);
-        t2.setFont(f2);
-        b1.setFont(f2);
-        b2.setFont(f2);
+        // Buttons
+        JButton transferBtn = createButton("Transfer", 250, 220, 120, 42, backgroundPanel);
+        JButton backBtn = createButton("Back", 400, 220, 120, 42, backgroundPanel);
 
-        Container c = getContentPane();
-        c.setLayout(null);
+        // Button actions
+        backBtn.addActionListener(a -> {
+            new HomePage(username);
+            dispose();
+        });
 
-        int labelX = 200, fieldX = 400, yStart = 80, width = 150, height = 30, gap = 40;
+        transferBtn.addActionListener(a -> {
+            String receiver = receiverField.getText();
+            String amountStr = amountField.getText();
+            if (receiver.isEmpty() || amountStr.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Fields cannot be empty");
+                return;
+            }
 
-        title.setBounds(250, 20, 300, 40);
+            double amount;
+            try {
+                amount = Double.parseDouble(amountStr);
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(null, "Invalid amount");
+                return;
+            }
 
-        l1.setBounds(labelX, yStart, width, height);
-        t1.setBounds(fieldX, yStart, width, height);
+            double senderBalance = fetchBalance(username);
+            if (amount > senderBalance) {
+                JOptionPane.showMessageDialog(null, "Insufficient balance");
+                return;
+            }
 
-        l2.setBounds(labelX, yStart + gap, width, height);
-        t2.setBounds(fieldX, yStart + gap, width, height);
+            // Deduct from sender
+            updateBalance(username, senderBalance - amount);
+            updatePassbook(username, "Transferred to " + receiver, -amount, senderBalance - amount);
 
-        b1.setBounds(250, yStart + 2 * gap, 120, 40);
-        b2.setBounds(400, yStart + 2 * gap, 120, 40);
+            // Add to receiver
+            double receiverBalance = fetchBalance(receiver);
+            updateBalance(receiver, receiverBalance + amount);
+            updatePassbook(receiver, "Received from " + username, amount, receiverBalance + amount);
 
-        c.add(title);
-        c.add(l1);
-        c.add(t1);
-        c.add(l2);
-        c.add(t2);
-        c.add(b1);
-        c.add(b2);
+            JOptionPane.showMessageDialog(null, "Successfully Transferred");
+            receiverField.setText("");
+            amountField.setText("");
+        });
 
-        b2.addActionListener(
-                a->{
-                    new HomePage(username);
-                    dispose();
-                }
-        );
-        b1.addActionListener(
-                a->{
-                    String samnewala = t1.getText();
-                    String s1 = t2.getText();
-                    if(samnewala.isEmpty() || s1.isEmpty()){
-                        JOptionPane.showMessageDialog(null,"cannot be empty");
-                        return;
-                    }
-                    double amount = Double.parseDouble(s1);
-                    double balance = fetchBalance(username);
-
-                    if(amount > balance)
-                    {
-                        JOptionPane.showMessageDialog(null,"Insufficient balance");
-                        return;
-                    }
-                    //Round 2
-
-                    String url = "jdbc:mysql://localhost:3306/3dec";
-                    try(Connection con = DriverManager.getConnection(url,"root","your_password"))
-                    {
-                        String sql = "update users set balance = ? where username = ?";
-                        try(PreparedStatement pst = con.prepareStatement(sql))
-                        {
-                            pst.setDouble(1,balance-amount);
-                            pst.setString(2,username);
-                            pst.executeUpdate();
-                            updatePassbook(username,"Tranferred to "+samnewala,-amount,balance-amount);
-
-                        }
-
-                    }
-                    catch(Exception e)
-                    {
-                        JOptionPane.showInputDialog(null,e.getMessage());
-                    }
-
-                    //Round 3
-
-                    balance = fetchBalance(samnewala);
-
-                    //Round 4
-                    try(Connection con = DriverManager.getConnection(url,"root","your_password"))
-                    {
-                        String sql = "update users set balance = ? where username = ?";
-                        try(PreparedStatement pst = con.prepareStatement(sql))
-                        {
-                            pst.setDouble(1,balance+amount);
-                            pst.setString(2,samnewala);
-
-                            pst.executeUpdate();
-                            JOptionPane.showMessageDialog(null,"Successfully Transferred");
-                            updatePassbook(username,"Transferred from "+username,amount,balance+amount);
-                            t1.setText("");
-                            t2.setText("");
-                        }
-                    }
-                    catch(Exception e)
-                    {
-                        JOptionPane.showInputDialog(null,e.getMessage());
-                    }
-                }
-        );
-        setVisible(true);
+        // Frame settings
+        setTitle("VaultEdge - Transfer Funds");
         setSize(800, 550);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setTitle("Transfer Funds");
+        setVisible(true);
     }
 
-    void updatePassbook(String username,String desc ,double amount, double balance)
-    {
+    private void updatePassbook(String username, String desc, double amount, double balance) {
         String url = "jdbc:mysql://localhost:3306/3dec";
-        try(Connection con = DriverManager.getConnection(url,"root","your_password"))
-        {
-            String sql = "insert into transactions(username,description,amount,balance) values(?,?,?,?)";
-            try(PreparedStatement pst =con.prepareStatement(sql))
-            {
-                pst.setString (1,username);
-                pst.setString(2,desc);
-                pst.setDouble(3,amount);
-                pst.setDouble(4,balance);
+        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+            String sql = "INSERT INTO transactions(username, description, amount, balance) VALUES(?,?,?,?)";
+            try (PreparedStatement pst = con.prepareStatement(sql)) {
+                pst.setString(1, username);
+                pst.setString(2, desc);
+                pst.setDouble(3, amount);
+                pst.setDouble(4, balance);
                 pst.executeUpdate();
             }
-        }
-        catch(Exception e)
-        {
-            JOptionPane.showMessageDialog(null,e.getMessage());
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
         }
     }
 
+    private void updateBalance(String username, double balance) {
+        String url = "jdbc:mysql://localhost:3306/3dec";
+        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+            String sql = "UPDATE users SET balance = ? WHERE username = ?";
+            try (PreparedStatement pst = con.prepareStatement(sql)) {
+                pst.setDouble(1, balance);
+                pst.setString(2, username);
+                pst.executeUpdate();
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
+        }
+    }
 
-    double fetchBalance(String username){
+    private double fetchBalance(String username) {
         double balance = 0.0;
         String url = "jdbc:mysql://localhost:3306/3dec";
-        try(Connection con = DriverManager.getConnection(url,"root","your_password"))
-        {
-            String sql = "select balance from users where username = ? ";
-            try(PreparedStatement pst =con.prepareStatement(sql))
-            {
-                pst.setString (1,username);
+        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+            String sql = "SELECT balance FROM users WHERE username = ?";
+            try (PreparedStatement pst = con.prepareStatement(sql)) {
+                pst.setString(1, username);
                 ResultSet rs = pst.executeQuery();
-                if(rs.next())
-                {
-                    balance = rs.getDouble("balance");
-
-                }
-
-
+                if (rs.next()) balance = rs.getDouble("balance");
             }
-        }
-        catch(Exception e)
-        {
-            JOptionPane.showMessageDialog(null,e.getMessage());
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
         }
         return balance;
     }
 
-
     public static void main(String[] args) {
-        new TransferPage("Yash24");
+        new TransferPage("User");
     }
 }
