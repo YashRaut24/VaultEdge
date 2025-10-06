@@ -3,111 +3,91 @@ import java.awt.*;
 import java.sql.*;
 
 class HomePage extends JFrame {
+
+    // Styled label
+    private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        label.setForeground(new Color(200, 240, 255));
+        label.setBounds(x, y, width, height);
+        panel.add(label);
+        return label;
+    }
+
+    // Styled button
+    private JButton createButton(String text, int x, int y, int width, int height, JPanel panel) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        button.setForeground(Color.WHITE);
+        button.setOpaque(false);
+        button.setContentAreaFilled(false);
+        button.setBorder(BorderFactory.createLineBorder(new Color(0, 230, 255), 2));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setBounds(x, y, width, height);
+        panel.add(button);
+        return button;
+    }
+
     HomePage(String username) {
-        double balance = 0.0;
-        Font f = new Font("Futura", Font.BOLD, 40);
-        Font f2 = new Font("Calibri", Font.PLAIN, 22);
+        // Background panel
+        JPanel backgroundPanel = new JPanel(null);
+        backgroundPanel.setBackground(new Color(8, 20, 30));
+        setContentPane(backgroundPanel);
 
-        JLabel title = new JLabel("Welcome " + username, JLabel.CENTER);
-        JLabel balanceLabel = new JLabel("Balance: ₹0.00", JLabel.CENTER);
-        JButton b1 = new JButton("Deposit");
-        JButton b2 = new JButton("Withdraw");
-        JButton b3 = new JButton("Profile Settings");
-        JButton b4 = new JButton("Transfer");
-        JButton b5 = new JButton("Passbook");
-        JButton b6 = new JButton("Logout");
+        // Title
+        JLabel title = new JLabel("Welcome " + username, SwingConstants.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        title.setForeground(new Color(0, 230, 255));
+        title.setBounds(0, 30, 800, 40);
+        backgroundPanel.add(title);
 
-        title.setFont(f);
-        balanceLabel.setFont(f2);
-        b1.setFont(f2);
-        b2.setFont(f2);
-        b3.setFont(f2);
-        b4.setFont(f2);
-        b5.setFont(f2);
-        b6.setFont(f2);
+        // Balance label
+        JLabel balanceLabel = new JLabel("Balance: ₹0.00", SwingConstants.CENTER);
+        balanceLabel.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        balanceLabel.setForeground(new Color(200, 240, 255));
+        balanceLabel.setBounds(0, 80, 800, 30);
+        backgroundPanel.add(balanceLabel);
 
-        Container c = getContentPane();
-        c.setLayout(null);
+        // Buttons
+        JButton depositBtn = createButton("Deposit", 150, 150, 200, 42, backgroundPanel);
+        JButton withdrawBtn = createButton("Withdraw", 450, 150, 200, 42, backgroundPanel);
+        JButton profileBtn = createButton("Profile Settings", 150, 220, 200, 42, backgroundPanel);
+        JButton transferBtn = createButton("Transfer", 450, 220, 200, 42, backgroundPanel);
+        JButton passbookBtn = createButton("Passbook", 150, 290, 200, 42, backgroundPanel);
+        JButton logoutBtn = createButton("Logout", 450, 290, 200, 42, backgroundPanel);
 
-        title.setBounds(100, 30, 600, 50);
-        balanceLabel.setBounds(100, 100, 600, 30);
+        // Action listeners
+        depositBtn.addActionListener(a -> { new DepositPage(username); dispose(); });
+        withdrawBtn.addActionListener(a -> { new Withdraw(username); dispose(); });
+        transferBtn.addActionListener(a -> new TransferPage(username));
+        passbookBtn.addActionListener(a -> new PassbookPage(username));
+        logoutBtn.addActionListener(a -> { new LandingPage(); dispose(); });
 
-        b1.setBounds(100, 150, 200, 40);
-        b2.setBounds(400, 150, 200, 40);
-
-        b3.setBounds(100, 220, 200, 40);
-        b4.setBounds(400, 220, 200, 40);
-
-        b5.setBounds(100, 290, 200, 40);
-        b6.setBounds(400, 290, 200, 40);
-
-        c.add(title);
-        c.add(balanceLabel);
-        c.add(b1);
-        c.add(b2);
-        c.add(b3);
-        c.add(b4);
-        c.add(b5);
-        c.add(b6);
-
-        b1.addActionListener(
-                a -> {
-                    new DepositPage(username);
-                    dispose();
-                }
-        );
-
-        b2.addActionListener(
-                a->{
-                    new Withdraw(username);
-                    dispose();
-                }
-        );
-
-        b4.addActionListener(
-                a->{
-                    new TransferPage(username);
-                }
-        );
-
-        b5.addActionListener(
-                a->{
-                    new PassbookPage(username);
-                }
-        );
-        b6.addActionListener(
-                a->
-                {
-                    new LandingPage();
-                    dispose();
-                }
-        );
-
-        String url = "jdbc:mysql://localhost:3306/3dec";
-        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
-            String sql = "select balance from users where username=?";
+        // Fetch balance from DB
+        try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/3dec", "root", "your_password")) {
+            String sql = "SELECT balance FROM users WHERE username=?";
             try (PreparedStatement pst = con.prepareStatement(sql)) {
                 pst.setString(1, username);
-
                 ResultSet rs = pst.executeQuery();
                 if (rs.next()) {
-                    balance = rs.getDouble("balance");
+                    double balance = rs.getDouble("balance");
+                    balanceLabel.setText("Balance: ₹" + balance);
                 }
-                balanceLabel.setText("Balance: ₹" + balance);
-
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(null, e.getMessage());
         }
 
-        setVisible(true);
-        setSize(800, 550);
+        // Frame settings
+        setTitle("VaultEdge - Home");
+        setSize(800, 500);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setTitle("Home");
+        setVisible(true);
     }
 
     public static void main(String[] args) {
-        new HomePage("");
+        new HomePage("User");
     }
 }
