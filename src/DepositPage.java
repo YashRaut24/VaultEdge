@@ -2,131 +2,140 @@ import javax.swing.*;
 import java.awt.*;
 import java.sql.*;
 
-class DepositPage extends JFrame
-{
-    DepositPage(String username)
-    {
+class DepositPage extends JFrame {
 
-        Font f = new Font("Futura", Font.BOLD, 40);
-        Font f2 = new Font("Calibri", Font.PLAIN, 22);
+    // Styled text field
+    private JTextField createTextField(int x, int y, int width, int height, JPanel panel) {
+        JTextField field = new JTextField();
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        field.setBackground(new Color(15, 30, 40));
+        field.setForeground(new Color(220, 235, 245));
+        field.setCaretColor(new Color(0, 230, 255));
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(0, 230, 255), 1),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+        field.setBounds(x, y, width, height);
+        panel.add(field);
+        return field;
+    }
 
-        JLabel title = new JLabel("Deposit Money", JLabel.CENTER);
-        JLabel label = new JLabel("Enter Amount:");
-        JTextField t1 = new JTextField(10);
-        JButton b1 = new JButton("Deposit");
-        JButton b2 = new JButton("Back");
+    // Styled button
+    private JButton createButton(String text, int x, int y, int width, int height, JPanel panel, Color borderColor, Color textColor, Color bgColor) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        button.setForeground(textColor);
+        button.setOpaque(false);
+        button.setContentAreaFilled(false);
+        button.setBorder(BorderFactory.createLineBorder(borderColor, 2));
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setBounds(x, y, width, height);
+        if (bgColor != null) {
+            button.setBackground(bgColor);
+            button.setOpaque(true);
+        }
+        panel.add(button);
+        return button;
+    }
 
-        title.setFont(f);
-        label.setFont(f2);
-        t1.setFont(f2);
-        b1.setFont(f2);
-        b2.setFont(f2);
+    // Styled label
+    private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel, int fontSize, boolean bold) {
+        JLabel label = new JLabel(text, SwingConstants.CENTER);
+        label.setFont(new Font("Segoe UI", bold ? Font.BOLD : Font.PLAIN, fontSize));
+        label.setForeground(new Color(0, 230, 255));
+        label.setBounds(x, y, width, height);
+        panel.add(label);
+        return label;
+    }
 
-        Container c = getContentPane();
-        c.setLayout(null);
+    DepositPage(String username) {
+        JPanel backgroundPanel = new JPanel(null);
+        backgroundPanel.setBackground(new Color(8, 20, 30));
+        setContentPane(backgroundPanel);
 
-        title.setBounds(200, 30, 400, 50);
-        label.setBounds(250, 120, 300, 30);
-        t1.setBounds(250, 160, 300, 30);
-        b1.setBounds(300, 220, 200, 40);
-        b2.setBounds(300, 280, 200, 40);
+        // Title
+        createLabel("Deposit Money", 0, 30, 800, 50, backgroundPanel, 28, true);
 
-        c.add(title);
-        c.add(label);
-        c.add(t1);
-        c.add(b1);
-        c.add(b2);
+        // Amount label
+        createLabel("Enter Amount:", 250, 120, 300, 25, backgroundPanel, 16, false);
 
-        b2.addActionListener(
-                a->
-                {
-                    new HomePage(username);
-                    dispose();
-                }
-        );
+        // Amount input
+        JTextField amountField = createTextField(250, 160, 300, 35, backgroundPanel);
 
-        b1.addActionListener(
-                a->
-                {
-                    double balance = 0.0;
-                    String url = "jdbc:mysql://localhost:3306/3dec";
-                    try(Connection con = DriverManager.getConnection(url,"root","your_password"))
-                    {
-                        String sql = "select balance from users where username = ? ";
-                        try(PreparedStatement pst =con.prepareStatement(sql))
-                        {
-                            pst.setString (1,username);
-                            ResultSet rs = pst.executeQuery();
-                            if(rs.next())
-                            {
-                                balance = rs.getDouble("balance");
+        // Buttons
+        JButton depositButton = createButton("Deposit", 300, 220, 200, 40, backgroundPanel,
+                new Color(0, 230, 255), Color.WHITE, new Color(0, 153, 76));
 
-                            }
+        JButton backButton = createButton("Back", 300, 280, 200, 40, backgroundPanel,
+                new Color(0, 230, 255), Color.WHITE, new Color(255, 51, 51));
 
+        backButton.addActionListener(e -> {
+            new HomePage(username);
+            dispose();
+        });
 
-                        }
-                    }
-                    catch(Exception e)
-                    {
-                        JOptionPane.showMessageDialog(null,e.getMessage());
-                    }
+        depositButton.addActionListener(e -> {
+            double balance = 0.0;
+            String url = "jdbc:mysql://localhost:3306/3dec";
 
-                    String s1 = t1.getText();
-                    if(s1.isEmpty())
-                    {
-                        JOptionPane.showMessageDialog(null,"Please enter amount");
-                    }
-                    else
-                    {
-                        double amount = Double.parseDouble(s1);
-                        double total = amount + balance;
-                        try(Connection con = DriverManager.getConnection(url,"root","your_password"))
-                        {
-                            String sql = "update users set balance = ? where username = ?";
-                            try(PreparedStatement pst = con.prepareStatement(sql))
-                            {
-                                pst.setDouble(1,total);
-                                pst.setString(2,username);
-
-                                pst.executeUpdate();
-                                JOptionPane.showMessageDialog(null,"Successfully Deposited");
-                                t1.setText("");
-                                updatePassbook(username,"deposit",amount,balance+amount);
-                            }
-                        }
-                        catch(Exception e)
-                        {
-                            JOptionPane.showMessageDialog(null,e.getMessage());
-                        }
+            // Get current balance
+            try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+                String sql = "SELECT balance FROM users WHERE username = ?";
+                try (PreparedStatement pst = con.prepareStatement(sql)) {
+                    pst.setString(1, username);
+                    ResultSet rs = pst.executeQuery();
+                    if (rs.next()) {
+                        balance = rs.getDouble("balance");
                     }
                 }
-        );
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(null, ex.getMessage());
+            }
 
-        setVisible(true);
+            String input = amountField.getText();
+            if (input.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Please enter amount");
+            } else {
+                double amount = Double.parseDouble(input);
+                double total = balance + amount;
+                try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+                    String sql = "UPDATE users SET balance = ? WHERE username = ?";
+                    try (PreparedStatement pst = con.prepareStatement(sql)) {
+                        pst.setDouble(1, total);
+                        pst.setString(2, username);
+                        pst.executeUpdate();
+                        JOptionPane.showMessageDialog(null, "Successfully Deposited");
+                        amountField.setText("");
+                        updatePassbook(username, "deposit", amount, total);
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, ex.getMessage());
+                }
+            }
+        });
+
+        // Frame settings
+        setTitle("VaultEdge - Deposit Money");
         setSize(800, 550);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setTitle("Deposit Money");
+        setVisible(true);
     }
 
-    void updatePassbook(String username,String desc ,double amount, double balance)
-    {
+    void updatePassbook(String username, String desc, double amount, double balance) {
         String url = "jdbc:mysql://localhost:3306/3dec";
-        try(Connection con = DriverManager.getConnection(url,"root","your_password"))
-        {
-            String sql = "insert into transactions(username,description,amount,balance) values(?,?,?,?)";
-            try(PreparedStatement pst =con.prepareStatement(sql))
-            {
-                pst.setString (1,username);
-                pst.setString(2,desc);
-                pst.setDouble(3,amount);
-                pst.setDouble(4,balance);
+        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+            String sql = "INSERT INTO transactions(username,description,amount,balance) VALUES(?,?,?,?)";
+            try (PreparedStatement pst = con.prepareStatement(sql)) {
+                pst.setString(1, username);
+                pst.setString(2, desc);
+                pst.setDouble(3, amount);
+                pst.setDouble(4, balance);
                 pst.executeUpdate();
             }
-        }
-        catch(Exception e)
-        {
-            JOptionPane.showMessageDialog(null,e.getMessage());
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
         }
     }
 
