@@ -3,7 +3,7 @@ import java.awt.*;
 
 class AdminLogin extends JFrame {
 
-    // Creates styled label
+    // ===== Helper Methods =====
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -13,7 +13,6 @@ class AdminLogin extends JFrame {
         return label;
     }
 
-    // Creates styled text field
     private JTextField createTextField(int x, int y, int width, int height, JPanel panel) {
         JTextField field = new JTextField();
         field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
@@ -29,7 +28,6 @@ class AdminLogin extends JFrame {
         return field;
     }
 
-    // Creates styled password field
     private JPasswordField createPasswordField(int x, int y, int width, int height, JPanel panel) {
         JPasswordField field = new JPasswordField();
         field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
@@ -45,7 +43,6 @@ class AdminLogin extends JFrame {
         return field;
     }
 
-    // Creates styled button
     private JButton createButton(String text, int x, int y, int width, int height, JPanel panel) {
         JButton button = new JButton(text);
         button.setFont(new Font("Segoe UI", Font.BOLD, 16));
@@ -56,53 +53,62 @@ class AdminLogin extends JFrame {
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setBounds(x, y, width, height);
+
+        // Hover effect
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                button.setBorder(BorderFactory.createLineBorder(new Color(0, 255, 255), 3));
+            }
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                button.setBorder(BorderFactory.createLineBorder(new Color(0, 230, 255), 2));
+            }
+        });
+
         panel.add(button);
         return button;
     }
 
+    // ===== Constructor =====
     AdminLogin() {
-        // Solid background panel
         JPanel backgroundPanel = new JPanel(null);
         backgroundPanel.setBackground(new Color(8, 20, 30));
-        backgroundPanel.setBounds(0, 0, 450, 500);
         setContentPane(backgroundPanel);
 
-
-        // Title label
-        JLabel title = new JLabel("Admin Access", SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 32));
+        // ===== Title =====
+        JLabel title = new JLabel("Admin Login", SwingConstants.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 30));
         title.setForeground(new Color(0, 230, 255));
-        title.setBounds(0, 40, 450, 45);
+        title.setBounds(0, 40, 600, 40);
         backgroundPanel.add(title);
 
-        // Subtitle
-        JLabel subtitle = new JLabel("Secure administrator login", SwingConstants.CENTER);
+        JLabel subtitle = new JLabel("Access control for VaultEdge administrators", SwingConstants.CENTER);
         subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         subtitle.setForeground(new Color(200, 240, 255));
-        subtitle.setBounds(0, 90, 450, 20);
+        subtitle.setBounds(0, 85, 600, 20);
         backgroundPanel.add(subtitle);
 
-        // Username
-        createLabel("Username", 75, 150, 300, 20, backgroundPanel);
-        JTextField usernameField = createTextField(75, 175, 300, 42, backgroundPanel);
+        // ===== Fields =====
+        createLabel("Username", 150, 160, 300, 20, backgroundPanel);
+        JTextField usernameField = createTextField(150, 185, 300, 42, backgroundPanel);
 
-        // Password
-        createLabel("Password", 75, 235, 300, 20, backgroundPanel);
-        JPasswordField passwordField = createPasswordField(75, 260, 300, 42, backgroundPanel);
+        createLabel("Password", 150, 250, 300, 20, backgroundPanel);
+        JPasswordField passwordField = createPasswordField(150, 275, 300, 42, backgroundPanel);
 
-        // Buttons
-        JButton submitButton = createButton("Login", 125, 340, 200, 42, backgroundPanel);
-        JButton backButton = createButton("Back", 125, 395, 200, 42, backgroundPanel);
+        // ===== Buttons =====
+        JButton loginButton = createButton("Login", 180, 360, 110, 40, backgroundPanel);
+        JButton backButton = createButton("Back", 310, 360, 110, 40, backgroundPanel);
 
-        // Action listeners
-        submitButton.addActionListener(a -> {
+        // ===== Button Logic =====
+        loginButton.addActionListener(a -> {
+            String username = usernameField.getText();
             String password = new String(passwordField.getPassword());
-            if (password.equals("pass") && usernameField.getText().equals("admin")) {
+
+            if (username.equals("admin") && password.equals("pass")) {
                 JOptionPane.showMessageDialog(null, "Admin Login Successful!");
                 new AdminDashboard();
                 dispose();
             } else {
-                JOptionPane.showMessageDialog(null, "Admin login failed");
+                JOptionPane.showMessageDialog(null, "Invalid credentials! Try again.");
             }
         });
 
@@ -111,13 +117,12 @@ class AdminLogin extends JFrame {
             dispose();
         });
 
-        // Frame settings
+        // ===== Frame Settings =====
         setTitle("VaultEdge - Admin Login");
-        setVisible(true);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(450, 500);
+        setSize(600, 500);
         setLocationRelativeTo(null);
-        setLayout(null);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setVisible(true);
     }
 
     public static void main(String[] args) {
