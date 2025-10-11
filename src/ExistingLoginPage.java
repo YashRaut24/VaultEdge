@@ -4,7 +4,7 @@ import java.sql.*;
 
 class ExistingLoginPage extends JFrame {
 
-    // Creates styled label
+    // Create styled label
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -14,7 +14,7 @@ class ExistingLoginPage extends JFrame {
         return label;
     }
 
-    // Creates styled text field
+    // Create styled text field
     private JTextField createTextField(int x, int y, int width, int height, JPanel panel) {
         JTextField field = new JTextField();
         field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
@@ -30,7 +30,7 @@ class ExistingLoginPage extends JFrame {
         return field;
     }
 
-    // Creates styled password field
+    // Create styled password field
     private JPasswordField createPasswordField(int x, int y, int width, int height, JPanel panel) {
         JPasswordField field = new JPasswordField();
         field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
@@ -46,7 +46,7 @@ class ExistingLoginPage extends JFrame {
         return field;
     }
 
-    // Creates styled button
+    // Create styled button
     private JButton createButton(String text, int x, int y, int width, int height, JPanel panel) {
         JButton button = new JButton(text);
         button.setFont(new Font("Segoe UI", Font.BOLD, 16));
@@ -62,59 +62,67 @@ class ExistingLoginPage extends JFrame {
     }
 
     ExistingLoginPage() {
-        // Solid background panel
+
+        // Background panel
         JPanel backgroundPanel = new JPanel(null);
         backgroundPanel.setBackground(new Color(8, 20, 30));
-        backgroundPanel.setBounds(0, 0, 450, 500);
+        backgroundPanel.setBounds(0, 0, 600, 400);
         setContentPane(backgroundPanel);
 
-        // Title label
-        JLabel title = new JLabel("Welcome Back", SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 32));
+        // Title
+        JLabel title = new JLabel("Welcome Back to VaultEdge", SwingConstants.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
         title.setForeground(new Color(0, 230, 255));
-        title.setBounds(0, 40, 450, 45);
+        title.setBounds(0, 40, 600, 40);
         backgroundPanel.add(title);
 
         // Subtitle
         JLabel subtitle = new JLabel("Login to your account", SwingConstants.CENTER);
-        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 15));
         subtitle.setForeground(new Color(200, 240, 255));
-        subtitle.setBounds(0, 90, 450, 20);
+        subtitle.setBounds(0, 90, 600, 20);
         backgroundPanel.add(subtitle);
 
-        // Username
-        createLabel("Username", 75, 150, 300, 20, backgroundPanel);
-        JTextField usernameField = createTextField(75, 175, 300, 42, backgroundPanel);
+        // Username field
+        createLabel("Username", 150, 150, 300, 20, backgroundPanel);
+        JTextField usernameField = createTextField(150, 175, 300, 42, backgroundPanel);
 
-        // Password
-        createLabel("Password", 75, 235, 300, 20, backgroundPanel);
-        JPasswordField passwordField = createPasswordField(75, 260, 300, 42, backgroundPanel);
+        // Password field
+        createLabel("Password", 150, 240, 300, 20, backgroundPanel);
+        JPasswordField passwordField = createPasswordField(150, 265, 300, 42, backgroundPanel);
 
         // Buttons
-        JButton submitButton = createButton("Login", 125, 340, 200, 42, backgroundPanel);
-        JButton backButton = createButton("Back", 125, 395, 200, 42, backgroundPanel);
+        JButton loginButton = createButton("Login", 200, 330, 200, 42, backgroundPanel);
+        JButton backButton = createButton("Back", 200, 385, 200, 42, backgroundPanel);
 
-        // Action listeners
-        submitButton.addActionListener(a -> {
-            String url = "jdbc:mysql://localhost:3306/3dec";
+        // Action listener for login
+        loginButton.addActionListener(a -> {
+            String username = usernameField.getText();
+            String password = new String(passwordField.getPassword());
+
+            if (username.isEmpty() || password.isEmpty()) {
+                JOptionPane.showMessageDialog(null, "Please enter username and password!");
+                return;
+            }
+
+            String url = "jdbc:mysql://localhost:3306/3dec"; // Change DB name as needed
             try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
-                String sql = "select * from users where username = ? and password=?";
+                String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
                 try (PreparedStatement pst = con.prepareStatement(sql)) {
-                    pst.setString(1, usernameField.getText());
-                    String password = new String(passwordField.getPassword());
+                    pst.setString(1, username);
                     pst.setString(2, password);
                     ResultSet rs = pst.executeQuery();
 
                     if (rs.next()) {
                         JOptionPane.showMessageDialog(null, "Login Successful!");
-                        new HomePage(usernameField.getText());
+                        new HomePage(username);
                         dispose();
                     } else {
                         JOptionPane.showMessageDialog(null, "Invalid username or password");
                     }
                 }
             } catch (Exception e) {
-                JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
+                JOptionPane.showMessageDialog(null, "Database Error: " + e.getMessage());
             }
         });
 
@@ -127,7 +135,7 @@ class ExistingLoginPage extends JFrame {
         setTitle("VaultEdge - Login");
         setVisible(true);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setSize(450, 500);
+        setSize(600, 480);
         setLocationRelativeTo(null);
         setLayout(null);
     }
