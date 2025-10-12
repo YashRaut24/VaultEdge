@@ -1,4 +1,5 @@
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.sql.*;
@@ -44,10 +45,10 @@ class PassbookPage extends JFrame {
         backgroundPanel.add(title);
 
         // Table setup
-        String[] columnNames = {"Date & Time", "Description", "Amount", "Balance"};
+        String[] columnNames = {"Date & Time", "Description", "Type", "Amount (₹)", "Balance (₹)"};
         DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
         JTable table = new JTable(tableModel);
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 15));
         table.setRowHeight(28);
         table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 16));
         table.getTableHeader().setBackground(new Color(0, 230, 255));
@@ -58,35 +59,33 @@ class PassbookPage extends JFrame {
         table.setSelectionBackground(new Color(0, 230, 255, 80));
         table.setSelectionForeground(Color.WHITE);
 
+        // Center align columns
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBounds(50, 80, 700, 350);
+        scrollPane.setBounds(40, 80, 720, 350);
         scrollPane.getViewport().setBackground(new Color(15, 30, 40));
         backgroundPanel.add(scrollPane);
 
-        // Back button
-        JButton backButton = createButton("Back", 320, 450, 160, 42, backgroundPanel);
+        // Buttons
+        JButton refreshButton = createButton("Refresh", 220, 450, 160, 42, backgroundPanel);
+        JButton backButton = createButton("Back", 420, 450, 160, 42, backgroundPanel);
+
         backButton.addActionListener(e -> {
             new HomePage(username);
             dispose();
         });
 
-        // Fetch data from DB
-        try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/3dec", "root", "your_password")) {
-            String sql = "SELECT * FROM transactions WHERE username=? ORDER BY date DESC";
-            try (PreparedStatement pst = con.prepareStatement(sql)) {
-                pst.setString(1, username);
-                ResultSet rs = pst.executeQuery();
-                while (rs.next()) {
-                    String date = rs.getString("date");
-                    String desc = rs.getString("description");
-                    double amount = rs.getDouble("amount");
-                    double balance = rs.getDouble("balance");
-                    tableModel.addRow(new Object[]{date, desc, amount, balance});
-                }
-            }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, e.getMessage());
-        }
+        refreshButton.addActionListener(e -> {
+            loadTransactions(username, tableModel);
+        });
+
+        // Initial load
+        loadTransactions(username, tableModel);
 
         // Frame settings
         setTitle("VaultEdge - Passbook");
@@ -94,6 +93,52 @@ class PassbookPage extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
+    }
+
+    private void loadTransactions(String username, DefaultTableModel tableModel) {
+        tableModel.setRowCount(0); // Clear existing rows
+
+        String url = "jdbc:mysql://localhost:3306/3dec";
+        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+            String sql = "SELECT * FROM transactions WHERE username=? ORDER BY date DESC";
+            try (PreparedStatement pst = con.prepareStatement(sql)) {
+                pst.setString(1, username);
+                ResultSet rs = pst.executeQuery();
+
+                while (rs.next()) {
+                    String date = rs.getString("date");
+                    String desc = rs.getString("description");
+                    double amount = rs.getDouble("amount");
+                    double balance = rs.getDouble("balance");
+
+                    // Determine type based on description or amount sign
+                    String type = desc.toLowerCase().contains("deposit") || desc.toLowerCase().contains("credit")
+                            ? "Credit" : "Debit";
+
+                    tableModel.addRow(new Object[]{date, desc, type, amount, balance});
+                }
+            }
+
+            // Color coding (green = credit, red = debit)
+            JTable tempTable = new JTable(tableModel) {
+                @Override
+                public Component prepareRenderer(javax.swing.table.TableCellRenderer renderer, int row, int column) {
+                    Component comp = super.prepareRenderer(renderer, row, column);
+                    String type = (String) getValueAt(row, 2);
+                    if (type.equalsIgnoreCase("Credit")) {
+                        comp.setForeground(new Color(0, 255, 0));
+                    } else if (type.equalsIgnoreCase("Debit")) {
+                        comp.setForeground(new Color(255, 80, 80));
+                    } else {
+                        comp.setForeground(new Color(220, 235, 245));
+                    }
+                    return comp;
+                }
+            };
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
+        }
     }
 
     public static void main(String[] args) {
