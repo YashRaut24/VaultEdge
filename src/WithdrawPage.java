@@ -30,14 +30,27 @@ class Withdraw extends JFrame {
         return field;
     }
 
+    // Styled combo box
+    private JComboBox<String> createComboBox(String[] items, int x, int y, int width, int height, JPanel panel) {
+        JComboBox<String> combo = new JComboBox<>(items);
+        combo.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        combo.setBackground(new Color(15, 30, 40));
+        combo.setForeground(new Color(220, 235, 245));
+        combo.setBorder(BorderFactory.createLineBorder(new Color(0, 230, 255)));
+        combo.setBounds(x, y, width, height);
+        panel.add(combo);
+        return combo;
+    }
+
     // Styled button
-    private JButton createButton(String text, int x, int y, int width, int height, JPanel panel) {
+    private JButton createButton(String text, int x, int y, int width, int height, JPanel panel, Color borderColor, Color textColor, Color bgColor) {
         JButton button = new JButton(text);
         button.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        button.setForeground(Color.WHITE);
-        button.setOpaque(false);
-        button.setContentAreaFilled(false);
-        button.setBorder(BorderFactory.createLineBorder(new Color(0, 230, 255), 2));
+        button.setForeground(textColor);
+        button.setBackground(bgColor);
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setBorder(BorderFactory.createLineBorder(borderColor, 2));
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setBounds(x, y, width, height);
@@ -52,53 +65,79 @@ class Withdraw extends JFrame {
         setContentPane(backgroundPanel);
 
         // Title
-        JLabel title = new JLabel("Withdraw Money", SwingConstants.CENTER);
+        JLabel title = new JLabel("Withdraw Money 💸", SwingConstants.CENTER);
         title.setFont(new Font("Segoe UI", Font.BOLD, 28));
         title.setForeground(new Color(0, 230, 255));
-        title.setBounds(0, 20, 800, 40);
+        title.setBounds(0, 25, 800, 40);
         backgroundPanel.add(title);
 
-        // Label and input
-        createLabel("Enter Amount:", 250, 120, 200, 30, backgroundPanel);
-        JTextField amountField = createTextField(250, 160, 300, 30, backgroundPanel);
+        // Current Balance
+        double currentBalance = fetchBalance(username);
+        JLabel balanceLabel = createLabel("Current Balance: ₹" + currentBalance, 270, 90, 300, 30, backgroundPanel);
+
+        // Amount input
+        createLabel("Enter Amount:", 180, 150, 200, 30, backgroundPanel);
+        JTextField amountField = createTextField(350, 150, 250, 35, backgroundPanel);
+
+        // Withdrawal Method
+        createLabel("Withdrawal Method:", 180, 210, 200, 30, backgroundPanel);
+        String[] methods = {"VaultEdge Wallet", "Linked Bank Account", "UPI Transfer", "Virtual Card Transfer"};
+        JComboBox<String> methodBox = createComboBox(methods, 350, 210, 250, 35, backgroundPanel);
+
+        // Note (optional)
+        createLabel("Note (optional):", 180, 270, 200, 30, backgroundPanel);
+        JTextField noteField = createTextField(350, 270, 250, 35, backgroundPanel);
+
+        // Status Label
+        JLabel statusLabel = createLabel("Status: Waiting for action...", 270, 400, 400, 30, backgroundPanel);
+        statusLabel.setForeground(new Color(0, 200, 255));
 
         // Buttons
-        JButton withdrawBtn = createButton("Withdraw", 250, 220, 120, 42, backgroundPanel);
-        JButton backBtn = createButton("Back", 430, 220, 120, 42, backgroundPanel);
+        JButton withdrawBtn = createButton("Withdraw", 230, 330, 150, 42, backgroundPanel,
+                new Color(0, 230, 255), Color.WHITE, new Color(0, 153, 76));
 
-        // Button actions
-        backBtn.addActionListener(a -> {
+        JButton cancelBtn = createButton("Cancel", 430, 330, 150, 42, backgroundPanel,
+                new Color(0, 230, 255), Color.WHITE, new Color(255, 51, 51));
+
+        // Button Actions
+        cancelBtn.addActionListener(a -> {
             new HomePage(username);
             dispose();
         });
 
         withdrawBtn.addActionListener(a -> {
-            double balance = fetchBalance(username);
-            double wlimit = fetchLimit(username);
-
-            String amtStr = amountField.getText();
+            String amtStr = amountField.getText().trim();
             if (amtStr.isEmpty()) {
                 JOptionPane.showMessageDialog(null, "Please enter an amount");
                 return;
             }
 
-            double amount;
             try {
-                amount = Double.parseDouble(amtStr);
-            } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(null, "Invalid amount");
-                return;
-            }
+                double amount = Double.parseDouble(amtStr);
+                double balance = fetchBalance(username);
+                String method = methodBox.getSelectedItem().toString();
+                String note = noteField.getText().trim();
 
-            if (amount > balance) {
-                JOptionPane.showMessageDialog(null, "Amount is greater than balance");
-            } else if (amount > wlimit) {
-                JOptionPane.showMessageDialog(null, "Withdrawal limit exceeded");
-            } else {
-                updateBalance(username, balance - amount);
-                updatePassbook(username, "Withdrawn", amount, balance - amount);
-                JOptionPane.showMessageDialog(null, "Successfully Withdrawn");
+                if (amount <= 0) {
+                    statusLabel.setText("Status: Invalid amount ❌");
+                    return;
+                }
+
+                if (amount > balance) {
+                    statusLabel.setText("Status: Insufficient Balance ❌");
+                    return;
+                }
+
+                double newBalance = balance - amount;
+                updateBalance(username, newBalance);
+                updatePassbook(username, "Withdraw via " + method, amount, newBalance, note);
+
                 amountField.setText("");
+                noteField.setText("");
+                balanceLabel.setText("Current Balance: ₹" + newBalance);
+                statusLabel.setText("Status: Withdrawal Successful ✅");
+            } catch (NumberFormatException e) {
+                statusLabel.setText("Status: Invalid input ❌");
             }
         });
 
@@ -126,22 +165,6 @@ class Withdraw extends JFrame {
         return balance;
     }
 
-    private double fetchLimit(String username) {
-        double limit = 0.0;
-        String url = "jdbc:mysql://localhost:3306/3dec";
-        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
-            String sql = "SELECT wlimit FROM users WHERE username = ?";
-            try (PreparedStatement pst = con.prepareStatement(sql)) {
-                pst.setString(1, username);
-                ResultSet rs = pst.executeQuery();
-                if (rs.next()) limit = rs.getDouble("wlimit");
-            }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, e.getMessage());
-        }
-        return limit;
-    }
-
     private void updateBalance(String username, double balance) {
         String url = "jdbc:mysql://localhost:3306/3dec";
         try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
@@ -156,15 +179,16 @@ class Withdraw extends JFrame {
         }
     }
 
-    private void updatePassbook(String username, String desc, double amount, double balance) {
+    private void updatePassbook(String username, String desc, double amount, double balance, String note) {
         String url = "jdbc:mysql://localhost:3306/3dec";
         try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
-            String sql = "INSERT INTO transactions(username, description, amount, balance) VALUES(?,?,?,?)";
+            String sql = "INSERT INTO transactions(username, description, amount, balance, note) VALUES(?,?,?,?,?)";
             try (PreparedStatement pst = con.prepareStatement(sql)) {
                 pst.setString(1, username);
                 pst.setString(2, desc);
                 pst.setDouble(3, amount);
                 pst.setDouble(4, balance);
+                pst.setString(5, note);
                 pst.executeUpdate();
             }
         } catch (Exception e) {
