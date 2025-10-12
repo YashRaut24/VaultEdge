@@ -25,23 +25,19 @@ class DepositPage extends JFrame {
         JButton button = new JButton(text);
         button.setFont(new Font("Segoe UI", Font.BOLD, 16));
         button.setForeground(textColor);
-        button.setOpaque(false);
-        button.setContentAreaFilled(false);
+        button.setOpaque(true);
+        button.setBackground(bgColor);
         button.setBorder(BorderFactory.createLineBorder(borderColor, 2));
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setBounds(x, y, width, height);
-        if (bgColor != null) {
-            button.setBackground(bgColor);
-            button.setOpaque(true);
-        }
         panel.add(button);
         return button;
     }
 
     // Styled label
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel, int fontSize, boolean bold) {
-        JLabel label = new JLabel(text, SwingConstants.CENTER);
+        JLabel label = new JLabel(text, SwingConstants.LEFT);
         label.setFont(new Font("Segoe UI", bold ? Font.BOLD : Font.PLAIN, fontSize));
         label.setForeground(new Color(0, 230, 255));
         label.setBounds(x, y, width, height);
@@ -55,83 +51,127 @@ class DepositPage extends JFrame {
         setContentPane(backgroundPanel);
 
         // Title
-        createLabel("Deposit Money", 0, 30, 800, 50, backgroundPanel, 28, true);
+        JLabel title = createLabel("💰 Deposit Money", 0, 40, 800, 40, backgroundPanel, 28, true);
+        title.setHorizontalAlignment(SwingConstants.CENTER);
 
-        // Amount label
-        createLabel("Enter Amount:", 250, 120, 300, 25, backgroundPanel, 16, false);
+        // Current balance label
+        JLabel balanceLabel = createLabel("Current Balance: ₹0.00", 250, 110, 300, 25, backgroundPanel, 16, false);
 
-        // Amount input
-        JTextField amountField = createTextField(250, 160, 300, 35, backgroundPanel);
+        // Get balance from DB
+        double balance = 0.0;
+        String url = "jdbc:mysql://localhost:3306/3dec";
+        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+            String sql = "SELECT balance FROM users WHERE username = ?";
+            try (PreparedStatement pst = con.prepareStatement(sql)) {
+                pst.setString(1, username);
+                ResultSet rs = pst.executeQuery();
+                if (rs.next()) {
+                    balance = rs.getDouble("balance");
+                    balanceLabel.setText("Current Balance: ₹" + balance);
+                }
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
+        }
+
+        // Enter amount
+        createLabel("Enter Amount:", 250, 160, 200, 25, backgroundPanel, 16, false);
+        JTextField amountField = createTextField(250, 190, 300, 35, backgroundPanel);
+
+        // Payment method dropdown
+        createLabel("Payment Method:", 250, 240, 200, 25, backgroundPanel, 16, false);
+        String[] methods = {
+                "VaultEdge Wallet",
+                "Linked Bank Account",
+                "UPI Transfer",
+                "Credit/Debit Card",
+                "Net Banking"
+        };
+        JComboBox<String> paymentMethod = new JComboBox<>(methods);
+        paymentMethod.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        paymentMethod.setBackground(new Color(15, 30, 40));
+        paymentMethod.setForeground(new Color(220, 235, 245));
+        paymentMethod.setBounds(250, 270, 300, 35);
+        backgroundPanel.add(paymentMethod);
+
+        // Note field
+        createLabel("Note (optional):", 250, 320, 200, 25, backgroundPanel, 16, false);
+        JTextField noteField = createTextField(250, 350, 300, 35, backgroundPanel);
 
         // Buttons
-        JButton depositButton = createButton("Deposit", 300, 220, 200, 40, backgroundPanel,
+        JButton depositButton = createButton("Deposit", 250, 410, 140, 40, backgroundPanel,
                 new Color(0, 230, 255), Color.WHITE, new Color(0, 153, 76));
 
-        JButton backButton = createButton("Back", 300, 280, 200, 40, backgroundPanel,
+        JButton cancelButton = createButton("Cancel", 410, 410, 140, 40, backgroundPanel,
                 new Color(0, 230, 255), Color.WHITE, new Color(255, 51, 51));
 
-        backButton.addActionListener(e -> {
+        // Status label
+        JLabel statusLabel = createLabel("", 250, 470, 400, 25, backgroundPanel, 16, false);
+
+        // Cancel button action
+        cancelButton.addActionListener(e -> {
             new HomePage(username);
             dispose();
         });
 
+        // Deposit logic
+        double finalBalance = balance;
         depositButton.addActionListener(e -> {
-            double balance = 0.0;
-            String url = "jdbc:mysql://localhost:3306/3dec";
-
-            // Get current balance
-            try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
-                String sql = "SELECT balance FROM users WHERE username = ?";
-                try (PreparedStatement pst = con.prepareStatement(sql)) {
-                    pst.setString(1, username);
-                    ResultSet rs = pst.executeQuery();
-                    if (rs.next()) {
-                        balance = rs.getDouble("balance");
-                    }
-                }
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(null, ex.getMessage());
-            }
-
             String input = amountField.getText();
+            String method = (String) paymentMethod.getSelectedItem();
+            String note = noteField.getText();
+
             if (input.isEmpty()) {
                 JOptionPane.showMessageDialog(null, "Please enter amount");
-            } else {
+                return;
+            }
+
+            try {
                 double amount = Double.parseDouble(input);
-                double total = balance + amount;
+                double total = finalBalance + amount;
+
                 try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
                     String sql = "UPDATE users SET balance = ? WHERE username = ?";
                     try (PreparedStatement pst = con.prepareStatement(sql)) {
                         pst.setDouble(1, total);
                         pst.setString(2, username);
                         pst.executeUpdate();
-                        JOptionPane.showMessageDialog(null, "Successfully Deposited");
-                        amountField.setText("");
-                        updatePassbook(username, "deposit", amount, total);
                     }
+
+                    updatePassbook(username, "Deposit via " + method, amount, total, note);
+                    statusLabel.setText("Deposit Successful via " + method);
+                    balanceLabel.setText("Current Balance: ₹" + total);
+                    amountField.setText("");
+                    noteField.setText("");
+
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(null, ex.getMessage());
                 }
+
+            } catch (NumberFormatException nfe) {
+                JOptionPane.showMessageDialog(null, "Invalid amount entered");
             }
         });
 
         // Frame settings
         setTitle("VaultEdge - Deposit Money");
-        setSize(800, 550);
+        setSize(800, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
     }
 
-    void updatePassbook(String username, String desc, double amount, double balance) {
+    // Record transaction in passbook
+    void updatePassbook(String username, String desc, double amount, double balance, String note) {
         String url = "jdbc:mysql://localhost:3306/3dec";
         try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
-            String sql = "INSERT INTO transactions(username,description,amount,balance) VALUES(?,?,?,?)";
+            String sql = "INSERT INTO transactions(username, description, amount, balance, note) VALUES(?,?,?,?,?)";
             try (PreparedStatement pst = con.prepareStatement(sql)) {
                 pst.setString(1, username);
                 pst.setString(2, desc);
                 pst.setDouble(3, amount);
                 pst.setDouble(4, balance);
+                pst.setString(5, note);
                 pst.executeUpdate();
             }
         } catch (Exception e) {
