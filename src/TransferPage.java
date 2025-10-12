@@ -58,16 +58,26 @@ class TransferPage extends JFrame {
         title.setBounds(0, 20, 800, 40);
         backgroundPanel.add(title);
 
-        // Labels and fields
-        createLabel("Receiver:", 200, 100, 150, 30, backgroundPanel);
-        JTextField receiverField = createTextField(400, 100, 200, 30, backgroundPanel);
+        // Current balance label
+        double currentBalance = fetchBalance(username);
+        JLabel balanceLabel = createLabel("Current Balance: ₹" + currentBalance, 250, 70, 300, 25, backgroundPanel);
 
-        createLabel("Amount:", 200, 160, 150, 30, backgroundPanel);
-        JTextField amountField = createTextField(400, 160, 200, 30, backgroundPanel);
+        // Labels and fields
+        createLabel("Receiver (Username):", 200, 120, 180, 30, backgroundPanel);
+        JTextField receiverField = createTextField(400, 120, 200, 30, backgroundPanel);
+
+        createLabel("Amount (₹):", 200, 170, 180, 30, backgroundPanel);
+        JTextField amountField = createTextField(400, 170, 200, 30, backgroundPanel);
+
+        createLabel("Note (optional):", 200, 220, 180, 30, backgroundPanel);
+        JTextField noteField = createTextField(400, 220, 200, 30, backgroundPanel);
+
+        // Status label
+        JLabel statusLabel = createLabel("", 200, 280, 400, 30, backgroundPanel);
 
         // Buttons
-        JButton transferBtn = createButton("Transfer", 250, 220, 120, 42, backgroundPanel);
-        JButton backBtn = createButton("Back", 400, 220, 120, 42, backgroundPanel);
+        JButton transferBtn = createButton("Transfer", 250, 320, 120, 42, backgroundPanel);
+        JButton backBtn = createButton("Back", 400, 320, 120, 42, backgroundPanel);
 
         // Button actions
         backBtn.addActionListener(a -> {
@@ -78,8 +88,15 @@ class TransferPage extends JFrame {
         transferBtn.addActionListener(a -> {
             String receiver = receiverField.getText();
             String amountStr = amountField.getText();
+            String note = noteField.getText();
+
             if (receiver.isEmpty() || amountStr.isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Fields cannot be empty");
+                statusLabel.setText("❌ Fields cannot be empty");
+                return;
+            }
+
+            if (!userExists(receiver)) {
+                statusLabel.setText("❌ Receiver does not exist");
                 return;
             }
 
@@ -87,28 +104,32 @@ class TransferPage extends JFrame {
             try {
                 amount = Double.parseDouble(amountStr);
             } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(null, "Invalid amount");
+                statusLabel.setText("❌ Invalid amount");
                 return;
             }
 
             double senderBalance = fetchBalance(username);
             if (amount > senderBalance) {
-                JOptionPane.showMessageDialog(null, "Insufficient balance");
+                statusLabel.setText("❌ Insufficient balance");
                 return;
             }
 
             // Deduct from sender
             updateBalance(username, senderBalance - amount);
-            updatePassbook(username, "Transferred to " + receiver, -amount, senderBalance - amount);
+            updatePassbook(username, "Transferred to " + receiver + (note.isEmpty() ? "" : " (" + note + ")"), -amount, senderBalance - amount);
 
             // Add to receiver
             double receiverBalance = fetchBalance(receiver);
             updateBalance(receiver, receiverBalance + amount);
-            updatePassbook(receiver, "Received from " + username, amount, receiverBalance + amount);
+            updatePassbook(receiver, "Received from " + username + (note.isEmpty() ? "" : " (" + note + ")"), amount, receiverBalance + amount);
 
-            JOptionPane.showMessageDialog(null, "Successfully Transferred");
+            statusLabel.setText("✅ Transfer Successful");
             receiverField.setText("");
             amountField.setText("");
+            noteField.setText("");
+
+            // Update current balance display
+            balanceLabel.setText("Current Balance: ₹" + fetchBalance(username));
         });
 
         // Frame settings
@@ -117,6 +138,21 @@ class TransferPage extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
+    }
+
+    private boolean userExists(String username) {
+        String url = "jdbc:mysql://localhost:3306/3dec";
+        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+            String sql = "SELECT username FROM users WHERE username=?";
+            try (PreparedStatement pst = con.prepareStatement(sql)) {
+                pst.setString(1, username);
+                ResultSet rs = pst.executeQuery();
+                return rs.next();
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
+            return false;
+        }
     }
 
     private void updatePassbook(String username, String desc, double amount, double balance) {
