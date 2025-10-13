@@ -50,7 +50,7 @@ class AdminDashboard extends JFrame {
         return button;
     }
 
-    AdminDashboard() {
+    AdminDashboard(String Username) {
 
         // Database Credentials
         String url = EnvLoader.get("DB_URL");
@@ -63,7 +63,7 @@ class AdminDashboard extends JFrame {
         setContentPane(adminDashboardPanel);
 
         // Title label
-        JLabel titleLabel = new JLabel("Admin Dashboard", SwingConstants.CENTER);
+        JLabel titleLabel = new JLabel("Welcome " + Username, SwingConstants.CENTER);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titleLabel.setForeground(new Color(0, 230, 255));
         titleLabel.setBounds(0, 20, 900, 40);
@@ -173,6 +173,6 @@ class AdminDashboard extends JFrame {
     }
 
     public static void main(String[] args) {
-        new AdminDashboard();
+        new AdminDashboard("Admin");
     }
 }
