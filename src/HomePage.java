@@ -4,6 +4,7 @@ import java.sql.*;
 
 class HomePage extends JFrame {
 
+    // Create labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel, int fontSize) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Segoe UI", Font.PLAIN, fontSize));
@@ -13,6 +14,7 @@ class HomePage extends JFrame {
         return label;
     }
 
+    // Create buttons
     private JButton createButton(String text, int x, int y, int width, int height, JPanel panel) {
         JButton button = new JButton(text);
         button.setFont(new Font("Segoe UI", Font.BOLD, 16));
@@ -27,6 +29,7 @@ class HomePage extends JFrame {
         return button;
     }
 
+    // Create transaction table
     private JTable createTransactionTable(int x, int y, int width, int height, JPanel panel) {
         String[] columns = {"Date", "Description", "Type", "Amount", "Balance"};
         String[][] data = new String[5][5];
@@ -46,46 +49,73 @@ class HomePage extends JFrame {
     }
 
     HomePage(String username) {
-        JPanel backgroundPanel = new JPanel(null);
-        backgroundPanel.setBackground(new Color(8, 20, 30));
-        setContentPane(backgroundPanel);
 
-        JLabel title = new JLabel("Welcome, " + username, SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        title.setForeground(new Color(0, 230, 255));
-        title.setBounds(0, 25, 900, 40);
-        backgroundPanel.add(title);
+        // DB Credentials
+        String url = EnvLoader.get("DB_URL");
+        String user = EnvLoader.get("DB_USER");
+        String password = EnvLoader.get("DB_PASSWORD");
 
-        JLabel accountType = createLabel("Account Type: ---", 120, 90, 300, 25, backgroundPanel, 16);
-        JLabel accountNumber = createLabel("Account No: ---", 120, 120, 300, 25, backgroundPanel, 16);
-        JLabel balanceLabel = createLabel("Balance: ₹0.00", 120, 150, 300, 25, backgroundPanel, 16);
+        // Home page panel
+        JPanel homePagePanel = new JPanel(null);
+        homePagePanel.setBackground(new Color(8, 20, 30));
+        setContentPane(homePagePanel);
 
-        JButton depositBtn = createButton("Deposit", 120, 210, 200, 42, backgroundPanel);
-        JButton withdrawBtn = createButton("Withdraw", 370, 210, 200, 42, backgroundPanel);
-        JButton transferBtn = createButton("Transfer", 620, 210, 200, 42, backgroundPanel);
-        JButton passbookBtn = createButton("Passbook", 120, 280, 200, 42, backgroundPanel);
-        JButton settingsBtn = createButton("Profile Settings", 370, 280, 200, 42, backgroundPanel);
-        JButton logoutBtn = createButton("Logout", 620, 280, 200, 42, backgroundPanel);
+        // Title label
+        JLabel titleLabel = new JLabel("Welcome, " + username, SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setForeground(new Color(0, 230, 255));
+        titleLabel.setBounds(0, 25, 900, 40);
+        homePagePanel.add(titleLabel);
 
-        createLabel("Recent Transactions", 120, 340, 300, 25, backgroundPanel, 17);
-        JTable transactionTable = createTransactionTable(120, 370, 700, 150, backgroundPanel);
+        // Account type label
+        JLabel accountTypeLabel = createLabel("Account Type: ---", 120, 90, 300, 25, homePagePanel, 16);
 
-        depositBtn.addActionListener(a -> { new DepositPage(username); dispose(); });
-        withdrawBtn.addActionListener(a -> { new Withdraw(username); dispose(); });
-        transferBtn.addActionListener(a -> new TransferPage(username));
-        passbookBtn.addActionListener(a -> new PassbookPage(username));
-        settingsBtn.addActionListener(a -> new Profile(username));
-        logoutBtn.addActionListener(a -> { new LandingPage(); dispose(); });
+        // Account number label
+        JLabel accountNumberLabel = createLabel("Account No: ---", 120, 120, 300, 25, homePagePanel, 16);
 
-        try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/3dec", "root", "your_password")) {
+        // Balance label
+        JLabel balanceLabel = createLabel("Balance: ₹0.00", 120, 150, 300, 25, homePagePanel, 16);
+
+        // Deposit button
+        JButton depositButton = createButton("Deposit", 120, 210, 200, 42, homePagePanel);
+        depositButton.addActionListener(a -> { new DepositPage(username); dispose(); });
+
+        // Withdraw button
+        JButton withdrawButton = createButton("Withdraw", 370, 210, 200, 42, homePagePanel);
+        withdrawButton.addActionListener(a -> { new Withdraw(username); dispose(); });
+
+        // Transfer button
+        JButton transferButton = createButton("Transfer", 620, 210, 200, 42, homePagePanel);
+        transferButton.addActionListener(a -> new TransferPage(username));
+
+        // Passbook button
+        JButton passbookButton = createButton("Passbook", 120, 280, 200, 42, homePagePanel);
+        passbookButton.addActionListener(a -> new PassbookPage(username));
+
+        // Settings button
+        JButton settingsButton = createButton("Profile Settings", 370, 280, 200, 42, homePagePanel);
+        settingsButton.addActionListener(a -> new Profile(username));
+
+        // Logout button
+        JButton logoutButton = createButton("Logout", 620, 280, 200, 42, homePagePanel);
+        logoutButton.addActionListener(a -> { new LandingPage(); dispose(); });
+
+        // Recent transaction label
+        createLabel("Recent Transactions", 120, 340, 300, 25, homePagePanel, 17);
+
+        // Transaction table
+        JTable transactionTable = createTransactionTable(120, 370, 700, 150, homePagePanel);
+
+
+        try (Connection con = DriverManager.getConnection(url, user, password)) {
             String sql = "SELECT account_type, balance, id FROM users WHERE username=?";
             PreparedStatement pst = con.prepareStatement(sql);
             pst.setString(1, username);
             ResultSet rs = pst.executeQuery();
 
             if (rs.next()) {
-                accountType.setText("Account Type: " + rs.getString("account_type"));
-                accountNumber.setText("Account No: VE" + rs.getInt("id"));
+                accountTypeLabel.setText("Account Type: " + rs.getString("account_type"));
+                accountNumberLabel.setText("Account No: VE" + rs.getInt("id"));
                 balanceLabel.setText("Balance: ₹" + rs.getDouble("balance"));
             }
 
