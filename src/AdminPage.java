@@ -61,7 +61,7 @@ class AdminPage extends JFrame {
         });
 
         showUsersButton.addActionListener(e -> {
-            new AdminDashboard(); // Opens the styled dashboard
+            new AdminDashboard("Admin"); // Opens the styled dashboard
             dispose();
         });
 
