@@ -3,7 +3,7 @@ import java.awt.*;
 
 class LandingPage extends JFrame {
 
-    // Creates feature cards
+    // Creates panels
     private JPanel createFeatureCard(String iconEmoji, String titleText, String descriptionText) {
         // Card panel
         JPanel cardPanel = new JPanel(null);
@@ -52,6 +52,11 @@ class LandingPage extends JFrame {
 
     LandingPage() {
 
+        // DB Credentials
+        String url = EnvLoader.get("DB_URL");
+        String user = EnvLoader.get("DB_USER");
+        String password = EnvLoader.get("DB_PASSWORD");
+
         // Background image panel
         JPanel backgroundImagePanel = new JPanel(null) {
             Image bg = new ImageIcon("images/LandingPageImage.jpg").getImage();
@@ -65,18 +70,18 @@ class LandingPage extends JFrame {
         setContentPane(backgroundImagePanel);
 
         // Title label
-        JLabel title = new JLabel("VaultEdge", SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 46));
-        title.setForeground(new Color(0, 230, 255)); // bright cyan
-        title.setBounds(0, 20, 900, 55);
-        backgroundImagePanel.add(title);
+        JLabel titleLabel = new JLabel("VaultEdge", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 46));
+        titleLabel.setForeground(new Color(0, 230, 255)); // bright cyan
+        titleLabel.setBounds(0, 20, 900, 55);
+        backgroundImagePanel.add(titleLabel);
 
         // Welcome label
-        JLabel welcome = new JLabel("Welcome to VaultEdge – Your Virtual Banking Assistant", SwingConstants.CENTER);
-        welcome.setFont(new Font("Segoe UI", Font.PLAIN, 18));
-        welcome.setForeground(new Color(200, 240, 255)); // light cyan
-        welcome.setBounds(0, 80, 900, 30);
-        backgroundImagePanel.add(welcome);
+        JLabel welcomeLabel = new JLabel("Welcome to VaultEdge – Your Virtual Banking Assistant", SwingConstants.CENTER);
+        welcomeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 18));
+        welcomeLabel.setForeground(new Color(200, 240, 255)); // light cyan
+        welcomeLabel.setBounds(0, 80, 900, 30);
+        backgroundImagePanel.add(welcomeLabel);
 
         // About button
         JButton aboutButton = createButton("About");
