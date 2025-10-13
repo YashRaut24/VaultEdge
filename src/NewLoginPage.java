@@ -5,7 +5,7 @@ import java.sql.*;
 
 class NewloginPage extends JFrame {
 
-    // ===== Helper Methods =====
+    // Create labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -15,6 +15,7 @@ class NewloginPage extends JFrame {
         return label;
     }
 
+    // Create TextFields
     private JTextField createTextField(int x, int y, int width, int height, JPanel panel) {
         JTextField field = new JTextField();
         field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
@@ -30,6 +31,7 @@ class NewloginPage extends JFrame {
         return field;
     }
 
+    // Create passwordField
     private JPasswordField createPasswordField(int x, int y, int width, int height, JPanel panel) {
         JPasswordField field = new JPasswordField();
         field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
@@ -45,6 +47,7 @@ class NewloginPage extends JFrame {
         return field;
     }
 
+    // Create dropdowns
     private JComboBox<String> createComboBox(String[] items, int x, int y, int width, int height, JPanel panel) {
         JComboBox<String> box = new JComboBox<>(items);
         box.setFont(new Font("Segoe UI", Font.PLAIN, 15));
@@ -56,6 +59,7 @@ class NewloginPage extends JFrame {
         return box;
     }
 
+    // Creates buttons
     private JButton createButton(String text, int x, int y, int width, int height, JPanel panel) {
         JButton button = new JButton(text);
         button.setFont(new Font("Segoe UI", Font.BOLD, 16));
@@ -81,76 +85,115 @@ class NewloginPage extends JFrame {
     }
 
     NewloginPage() {
-        JPanel backgroundPanel = new JPanel(null);
-        backgroundPanel.setBackground(new Color(8, 20, 30));
-        setContentPane(backgroundPanel);
+
+        // DB Credentials
+        String url = EnvLoader.get("DB_URL");
+        String user = EnvLoader.get("DB_USER");
+        String passwords = EnvLoader.get("DB_PASSWORD");
+
+        // New login page panel
+        JPanel newLoginPagePanel = new JPanel(null);
+        newLoginPagePanel.setBackground(new Color(8, 20, 30));
+        setContentPane(newLoginPagePanel);
 
         // Title Label
-        JLabel title = new JLabel("Create VaultEdge Account", SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        title.setForeground(new Color(0, 230, 255));
-        title.setBounds(0, 30, 700, 40);
-        backgroundPanel.add(title);
+        JLabel titleLabel = new JLabel("Create VaultEdge Account", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setForeground(new Color(0, 230, 255));
+        titleLabel.setBounds(0, 30, 700, 40);
+        newLoginPagePanel.add(titleLabel);
 
-        JLabel subtitle = new JLabel("Your secure gateway to digital banking", SwingConstants.CENTER);
-        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        subtitle.setForeground(new Color(200, 240, 255));
-        subtitle.setBounds(0, 70, 700, 20);
-        backgroundPanel.add(subtitle);
+        // Subtitle label
+        JLabel subtitleLabel = new JLabel("Your secure gateway to digital banking", SwingConstants.CENTER);
+        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        subtitleLabel.setForeground(new Color(200, 240, 255));
+        subtitleLabel.setBounds(0, 70, 700, 20);
+        newLoginPagePanel.add(subtitleLabel);
 
-        // ===== Left Column =====
-        createLabel("Full Name", 60, 120, 200, 20, backgroundPanel);
-        JTextField nameField = createTextField(60, 140, 250, 35, backgroundPanel);
+        // Full name label
+        createLabel("Full Name", 60, 120, 200, 20, newLoginPagePanel);
 
-        createLabel("Address", 60, 190, 200, 20, backgroundPanel);
-        JTextField addressField = createTextField(60, 210, 250, 35, backgroundPanel);
+        // Full name TextField
+        JTextField nameTextField = createTextField(60, 140, 250, 35, newLoginPagePanel);
 
-        createLabel("Password", 60, 260, 200, 20, backgroundPanel);
-        JPasswordField passwordField = createPasswordField(60, 280, 250, 35, backgroundPanel);
+        // Address label
+        createLabel("Address", 60, 190, 200, 20, newLoginPagePanel);
 
-        createLabel("Email", 60, 330, 200, 20, backgroundPanel);
-        JTextField emailField = createTextField(60, 350, 250, 35, backgroundPanel);
+        // Address TextField
+        JTextField addressTextField = createTextField(60, 210, 250, 35, newLoginPagePanel);
 
-        createLabel("Gender", 60, 400, 200, 20, backgroundPanel);
-        JComboBox<String> genderBox = createComboBox(new String[]{"Male", "Female", "Other"}, 60, 420, 250, 35, backgroundPanel);
+        // Password label
+        createLabel("Password", 60, 260, 200, 20, newLoginPagePanel);
 
-        // ===== Right Column =====
-        createLabel("Date of Birth (YYYY-MM-DD)", 380, 120, 250, 20, backgroundPanel);
-        JTextField dobField = createTextField(380, 140, 250, 35, backgroundPanel);
+        // Password PasswordField
+        JPasswordField passwordField = createPasswordField(60, 280, 250, 35, newLoginPagePanel);
 
-        createLabel("Username", 380, 190, 200, 20, backgroundPanel);
-        JTextField usernameField = createTextField(380, 210, 250, 35, backgroundPanel);
+        // Email label
+        createLabel("Email", 60, 330, 200, 20, newLoginPagePanel);
 
-        createLabel("Confirm Password", 380, 260, 200, 20, backgroundPanel);
-        JPasswordField confirmField = createPasswordField(380, 280, 250, 35, backgroundPanel);
+        // Email TextField
+        JTextField emailTextField = createTextField(60, 350, 250, 35, newLoginPagePanel);
 
-        createLabel("Phone Number", 380, 330, 200, 20, backgroundPanel);
-        JTextField phoneField = createTextField(380, 350, 250, 35, backgroundPanel);
+        // Gender label
+        createLabel("Gender", 60, 400, 200, 20, newLoginPagePanel);
 
-        createLabel("Account Type", 380, 400, 200, 20, backgroundPanel);
-        JComboBox<String> accountTypeBox = createComboBox(new String[]{"Savings", "Current"}, 380, 420, 250, 35, backgroundPanel);
+        // Gender dropdown
+        JComboBox<String> genderBox = createComboBox(new String[]{"Male", "Female", "Other"}, 60, 420, 250, 35, newLoginPagePanel);
 
-        // ===== Deposit =====
-        createLabel("Initial Deposit", 255, 480, 195, 20, backgroundPanel);
-        JTextField depositField = createTextField(255, 500, 195, 35, backgroundPanel);
+        // Date of birth label
+        createLabel("Date of Birth (YYYY-MM-DD)", 380, 120, 250, 20, newLoginPagePanel);
 
-        // ===== Buttons =====
-        JButton submitButton = createButton("Create Account", 190, 560, 150, 40, backgroundPanel);
-        JButton backButton = createButton("Back", 370, 560, 150, 40, backgroundPanel);
+        // Date of birth TextField
+        JTextField dobTextField = createTextField(380, 140, 250, 35, newLoginPagePanel);
 
-        // ===== Actions =====
+        // Username label
+        createLabel("Username", 380, 190, 200, 20, newLoginPagePanel);
+
+        // Username TextField
+        JTextField usernameTextField = createTextField(380, 210, 250, 35, newLoginPagePanel);
+
+        // Confirm password label
+        createLabel("Confirm Password", 380, 260, 200, 20, newLoginPagePanel);
+
+        // Confirm password field
+        JPasswordField confirmPassField = createPasswordField(380, 280, 250, 35, newLoginPagePanel);
+
+        // Phone number label
+        createLabel("Phone Number", 380, 330, 200, 20, newLoginPagePanel);
+
+        // PhoneNumber text field
+        JTextField phoneNumberTextField = createTextField(380, 350, 250, 35, newLoginPagePanel);
+
+        // Account type label
+        createLabel("Account Type", 380, 400, 200, 20, newLoginPagePanel);
+
+        // Account type dropdown
+        JComboBox<String> accountTypeBox = createComboBox(new String[]{"Savings", "Current"}, 380, 420, 250, 35, newLoginPagePanel);
+
+        // Deposit label
+        createLabel("Initial Deposit", 255, 480, 195, 20, newLoginPagePanel);
+
+        // Deposit TextField
+        JTextField depositTextField = createTextField(255, 500, 195, 35, newLoginPagePanel);
+
+        // Submit button
+        JButton submitButton = createButton("Create Account", 190, 560, 150, 40, newLoginPagePanel);
+
+        // Back button
+        JButton backButton = createButton("Back", 370, 560, 150, 40, newLoginPagePanel);
+
         submitButton.addActionListener(a -> {
-            String fullname = nameField.getText();
-            String dob = dobField.getText();
-            String address = addressField.getText();
-            String username = usernameField.getText();
-            String email = emailField.getText();
-            String phone = phoneField.getText();
+            String fullname = nameTextField.getText();
+            String dob = dobTextField.getText();
+            String address = addressTextField.getText();
+            String username = usernameTextField.getText();
+            String email = emailTextField.getText();
+            String phone = phoneNumberTextField.getText();
             String gender = genderBox.getSelectedItem().toString();
             String accountType = accountTypeBox.getSelectedItem().toString();
-            String depositText = depositField.getText();
+            String depositText = depositTextField.getText();
             String password = new String(passwordField.getPassword());
-            String confirm = new String(confirmField.getPassword());
+            String confirm = new String(confirmPassField.getPassword());
 
             if (fullname.isEmpty() || dob.isEmpty() || address.isEmpty() || username.isEmpty() ||
                     password.isEmpty() || email.isEmpty() || phone.isEmpty() || depositText.isEmpty()) {
@@ -170,8 +213,7 @@ class NewloginPage extends JFrame {
                     return;
                 }
 
-                String url = "jdbc:mysql://localhost:3306/3dec";
-                try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+                try (Connection con = DriverManager.getConnection(url, user, passwords)) {
                     String sql = "INSERT INTO users(fullname, dob, address, username, password, email, phone, gender, account_type, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                     PreparedStatement pst = con.prepareStatement(sql);
                     pst.setString(1, fullname);

@@ -6,7 +6,7 @@ import java.sql.*;
 
 class PassbookPage extends JFrame {
 
-    // Styled label
+    // Create labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Segoe UI", Font.PLAIN, 16));
@@ -16,7 +16,7 @@ class PassbookPage extends JFrame {
         return label;
     }
 
-    // Styled button
+    // Create buttons
     private JButton createButton(String text, int x, int y, int width, int height, JPanel panel) {
         JButton button = new JButton(text);
         button.setFont(new Font("Segoe UI", Font.BOLD, 16));
@@ -32,21 +32,31 @@ class PassbookPage extends JFrame {
     }
 
     PassbookPage(String username) {
-        // Background panel
-        JPanel backgroundPanel = new JPanel(null);
-        backgroundPanel.setBackground(new Color(8, 20, 30));
-        setContentPane(backgroundPanel);
 
-        // Title
-        JLabel title = new JLabel("Passbook", SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        title.setForeground(new Color(0, 230, 255));
-        title.setBounds(0, 20, 800, 40);
-        backgroundPanel.add(title);
+        // DB Credentials
+        String url = EnvLoader.get("DB_URL");
+        String user = EnvLoader.get("DB_USER");
+        String password = EnvLoader.get("DB_PASSWORD");
 
-        // Table setup
+        // Passbook panel
+        JPanel passbookPanel = new JPanel(null);
+        passbookPanel.setBackground(new Color(8, 20, 30));
+        setContentPane(passbookPanel);
+
+        // Title label
+        JLabel titleLabel = new JLabel("Passbook", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setForeground(new Color(0, 230, 255));
+        titleLabel.setBounds(0, 20, 800, 40);
+        passbookPanel.add(titleLabel);
+
+        // Passbook table's columns
         String[] columnNames = {"Date & Time", "Description", "Type", "Amount (₹)", "Balance (₹)"};
+
+        // Passbook table model
         DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
+
+        // Creates a table
         JTable table = new JTable(tableModel);
         table.setFont(new Font("Segoe UI", Font.PLAIN, 15));
         table.setRowHeight(28);
@@ -59,29 +69,31 @@ class PassbookPage extends JFrame {
         table.setSelectionBackground(new Color(0, 230, 255, 80));
         table.setSelectionForeground(Color.WHITE);
 
-        // Center align columns
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
         for (int i = 0; i < table.getColumnCount(); i++) {
             table.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
 
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBounds(40, 80, 720, 350);
-        scrollPane.getViewport().setBackground(new Color(15, 30, 40));
-        backgroundPanel.add(scrollPane);
+        // Passbook scroll pane (Allows for scrolling)
+        JScrollPane passbookScrollPane = new JScrollPane(table);
+        passbookScrollPane.setBounds(40, 80, 720, 350);
+        passbookScrollPane.getViewport().setBackground(new Color(15, 30, 40));
+        passbookPanel.add(passbookScrollPane);
 
-        // Buttons
-        JButton refreshButton = createButton("Refresh", 220, 450, 160, 42, backgroundPanel);
-        JButton backButton = createButton("Back", 420, 450, 160, 42, backgroundPanel);
+        // Refresh button
+        JButton refreshButton = createButton("Refresh", 220, 450, 160, 42, passbookPanel);
+
+        refreshButton.addActionListener(e -> {
+            loadTransactions(username, tableModel);
+        });
+
+        // Back button
+        JButton backButton = createButton("Back", 420, 450, 160, 42, passbookPanel);
 
         backButton.addActionListener(e -> {
             new HomePage(username);
             dispose();
-        });
-
-        refreshButton.addActionListener(e -> {
-            loadTransactions(username, tableModel);
         });
 
         // Initial load
@@ -95,11 +107,16 @@ class PassbookPage extends JFrame {
         setVisible(true);
     }
 
+    // Loads transactions
     private void loadTransactions(String username, DefaultTableModel tableModel) {
-        tableModel.setRowCount(0); // Clear existing rows
+        tableModel.setRowCount(0);
 
-        String url = "jdbc:mysql://localhost:3306/3dec";
-        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+        // DB Credentials
+        String url = EnvLoader.get("DB_URL");
+        String user = EnvLoader.get("DB_USER");
+        String passwords = EnvLoader.get("DB_PASSWORD");
+
+        try (Connection con = DriverManager.getConnection(url, user, passwords)) {
             String sql = "SELECT * FROM transactions WHERE username=? ORDER BY date DESC";
             try (PreparedStatement pst = con.prepareStatement(sql)) {
                 pst.setString(1, username);
@@ -111,7 +128,6 @@ class PassbookPage extends JFrame {
                     double amount = rs.getDouble("amount");
                     double balance = rs.getDouble("balance");
 
-                    // Determine type based on description or amount sign
                     String type = desc.toLowerCase().contains("deposit") || desc.toLowerCase().contains("credit")
                             ? "Credit" : "Debit";
 
@@ -119,7 +135,6 @@ class PassbookPage extends JFrame {
                 }
             }
 
-            // Color coding (green = credit, red = debit)
             JTable tempTable = new JTable(tableModel) {
                 @Override
                 public Component prepareRenderer(javax.swing.table.TableCellRenderer renderer, int row, int column) {
