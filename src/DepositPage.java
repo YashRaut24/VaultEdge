@@ -4,7 +4,7 @@ import java.sql.*;
 
 class DepositPage extends JFrame {
 
-    // Styled text field
+    // Creates TextFields
     private JTextField createTextField(int x, int y, int width, int height, JPanel panel) {
         JTextField field = new JTextField();
         field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
@@ -20,7 +20,7 @@ class DepositPage extends JFrame {
         return field;
     }
 
-    // Styled button
+    // Creates Buttons
     private JButton createButton(String text, int x, int y, int width, int height, JPanel panel, Color borderColor, Color textColor, Color bgColor) {
         JButton button = new JButton(text);
         button.setFont(new Font("Segoe UI", Font.BOLD, 16));
@@ -35,7 +35,7 @@ class DepositPage extends JFrame {
         return button;
     }
 
-    // Styled label
+    // Creates labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel, int fontSize, boolean bold) {
         JLabel label = new JLabel(text, SwingConstants.LEFT);
         label.setFont(new Font("Segoe UI", bold ? Font.BOLD : Font.PLAIN, fontSize));
@@ -46,21 +46,26 @@ class DepositPage extends JFrame {
     }
 
     DepositPage(String username) {
-        JPanel backgroundPanel = new JPanel(null);
-        backgroundPanel.setBackground(new Color(8, 20, 30));
-        setContentPane(backgroundPanel);
 
-        // Title
-        JLabel title = createLabel("💰 Deposit Money", 0, 40, 800, 40, backgroundPanel, 28, true);
-        title.setHorizontalAlignment(SwingConstants.CENTER);
+        // DB Credentials
+        String url = EnvLoader.get("DB_URL");
+        String user = EnvLoader.get("DB_USER");
+        String password = EnvLoader.get("DB_PASSWORD");
 
-        // Current balance label
-        JLabel balanceLabel = createLabel("Current Balance: ₹0.00", 250, 110, 300, 25, backgroundPanel, 16, false);
+        // Deposit page panel
+        JPanel depositPagePanel = new JPanel(null);
+        depositPagePanel.setBackground(new Color(8, 20, 30));
+        setContentPane(depositPagePanel);
 
-        // Get balance from DB
+        // Title label
+        JLabel titleLabel = createLabel("💰 Deposit Money", 0, 40, 800, 40, depositPagePanel, 28, true);
+        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        // Balance label
+        JLabel balanceLabel = createLabel("Current Balance: ₹0.00", 250, 110, 300, 25, depositPagePanel, 16, false);
+
         double balance = 0.0;
-        String url = "jdbc:mysql://localhost:3306/3dec";
-        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+        try (Connection con = DriverManager.getConnection(url, user, password)) {
             String sql = "SELECT balance FROM users WHERE username = ?";
             try (PreparedStatement pst = con.prepareStatement(sql)) {
                 pst.setString(1, username);
@@ -74,47 +79,51 @@ class DepositPage extends JFrame {
             JOptionPane.showMessageDialog(null, e.getMessage());
         }
 
-        // Enter amount
-        createLabel("Enter Amount:", 250, 160, 200, 25, backgroundPanel, 16, false);
-        JTextField amountField = createTextField(250, 190, 300, 35, backgroundPanel);
+        // Amount label
+        createLabel("Enter Amount:", 250, 160, 200, 25, depositPagePanel, 16, false);
 
-        // Payment method dropdown
-        createLabel("Payment Method:", 250, 240, 200, 25, backgroundPanel, 16, false);
+        // Amount TextField
+        JTextField amountField = createTextField(250, 190, 300, 35, depositPagePanel);
+
+        // Payment method label
+        createLabel("Payment Method:", 250, 240, 200, 25, depositPagePanel, 16, false);
         String[] methods = {
                 "VaultEdge Wallet",
-                "Linked Bank Account",
                 "UPI Transfer",
                 "Credit/Debit Card",
                 "Net Banking"
         };
+
+        // Payment method dropdown
         JComboBox<String> paymentMethod = new JComboBox<>(methods);
         paymentMethod.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         paymentMethod.setBackground(new Color(15, 30, 40));
         paymentMethod.setForeground(new Color(220, 235, 245));
         paymentMethod.setBounds(250, 270, 300, 35);
-        backgroundPanel.add(paymentMethod);
+        depositPagePanel.add(paymentMethod);
 
-        // Note field
-        createLabel("Note (optional):", 250, 320, 200, 25, backgroundPanel, 16, false);
-        JTextField noteField = createTextField(250, 350, 300, 35, backgroundPanel);
+        // Note label
+        createLabel("Note (optional):", 250, 320, 200, 25, depositPagePanel, 16, false);
 
-        // Buttons
-        JButton depositButton = createButton("Deposit", 250, 410, 140, 40, backgroundPanel,
+        // Note TextField
+        JTextField noteField = createTextField(250, 350, 300, 35, depositPagePanel);
+
+        // Deposit button
+        JButton depositButton = createButton("Deposit", 250, 410, 140, 40, depositPagePanel,
                 new Color(0, 230, 255), Color.WHITE, new Color(0, 153, 76));
 
-        JButton cancelButton = createButton("Cancel", 410, 410, 140, 40, backgroundPanel,
+        // Cancel button
+        JButton cancelButton = createButton("Cancel", 410, 410, 140, 40, depositPagePanel,
                 new Color(0, 230, 255), Color.WHITE, new Color(255, 51, 51));
 
         // Status label
-        JLabel statusLabel = createLabel("", 250, 470, 400, 25, backgroundPanel, 16, false);
+        JLabel statusLabel = createLabel("", 250, 470, 400, 25, depositPagePanel, 16, false);
 
-        // Cancel button action
         cancelButton.addActionListener(e -> {
             new HomePage(username);
             dispose();
         });
 
-        // Deposit logic
         double finalBalance = balance;
         depositButton.addActionListener(e -> {
             String input = amountField.getText();
@@ -130,7 +139,7 @@ class DepositPage extends JFrame {
                 double amount = Double.parseDouble(input);
                 double total = finalBalance + amount;
 
-                try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+                try (Connection con = DriverManager.getConnection(url, user, user)) {
                     String sql = "UPDATE users SET balance = ? WHERE username = ?";
                     try (PreparedStatement pst = con.prepareStatement(sql)) {
                         pst.setDouble(1, total);
@@ -163,8 +172,13 @@ class DepositPage extends JFrame {
 
     // Record transaction in passbook
     void updatePassbook(String username, String desc, double amount, double balance, String note) {
-        String url = "jdbc:mysql://localhost:3306/3dec";
-        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+
+        // DB Credentials
+        String url = EnvLoader.get("DB_URL");
+        String user = EnvLoader.get("DB_USER");
+        String password = EnvLoader.get("DB_PASSWORD");
+
+        try (Connection con = DriverManager.getConnection(url, user, password)) {
             String sql = "INSERT INTO transactions(username, description, amount, balance, note) VALUES(?,?,?,?,?)";
             try (PreparedStatement pst = con.prepareStatement(sql)) {
                 pst.setString(1, username);
