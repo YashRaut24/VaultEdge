@@ -4,7 +4,7 @@ import java.sql.*;
 
 class ExistingLoginPage extends JFrame {
 
-    // Create styled label
+    // Create labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -14,7 +14,7 @@ class ExistingLoginPage extends JFrame {
         return label;
     }
 
-    // Create styled text field
+    // Create TextFields
     private JTextField createTextField(int x, int y, int width, int height, JPanel panel) {
         JTextField field = new JTextField();
         field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
@@ -30,7 +30,7 @@ class ExistingLoginPage extends JFrame {
         return field;
     }
 
-    // Create styled password field
+    // Create PassFields
     private JPasswordField createPasswordField(int x, int y, int width, int height, JPanel panel) {
         JPasswordField field = new JPasswordField();
         field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
@@ -46,7 +46,7 @@ class ExistingLoginPage extends JFrame {
         return field;
     }
 
-    // Create styled button
+    // Create buttons
     private JButton createButton(String text, int x, int y, int width, int height, JPanel panel) {
         JButton button = new JButton(text);
         button.setFont(new Font("Segoe UI", Font.BOLD, 16));
@@ -63,39 +63,49 @@ class ExistingLoginPage extends JFrame {
 
     ExistingLoginPage() {
 
-        // Background panel
-        JPanel backgroundPanel = new JPanel(null);
-        backgroundPanel.setBackground(new Color(8, 20, 30));
-        backgroundPanel.setBounds(0, 0, 600, 400);
-        setContentPane(backgroundPanel);
+        // DB Credentials
+        String url = EnvLoader.get("DB_URL");
+        String user = EnvLoader.get("DB_USER");
+        String passwords = EnvLoader.get("DB_PASSWORD");
 
-        // Title
-        JLabel title = new JLabel("Welcome Back to VaultEdge", SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        title.setForeground(new Color(0, 230, 255));
-        title.setBounds(0, 40, 600, 40);
-        backgroundPanel.add(title);
+        // Existing login page panel
+        JPanel existingLoginPagePanel = new JPanel(null);
+        existingLoginPagePanel.setBackground(new Color(8, 20, 30));
+        existingLoginPagePanel.setBounds(0, 0, 600, 400);
+        setContentPane(existingLoginPagePanel);
 
-        // Subtitle
-        JLabel subtitle = new JLabel("Login to your account", SwingConstants.CENTER);
-        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        subtitle.setForeground(new Color(200, 240, 255));
-        subtitle.setBounds(0, 90, 600, 20);
-        backgroundPanel.add(subtitle);
+        // Title label
+        JLabel titleLabel = new JLabel("Welcome Back to VaultEdge", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setForeground(new Color(0, 230, 255));
+        titleLabel.setBounds(0, 40, 600, 40);
+        existingLoginPagePanel.add(titleLabel);
 
-        // Username field
-        createLabel("Username", 150, 150, 300, 20, backgroundPanel);
-        JTextField usernameField = createTextField(150, 175, 300, 42, backgroundPanel);
+        // Subtitle label
+        JLabel subtitleLabel = new JLabel("Login to your account", SwingConstants.CENTER);
+        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        subtitleLabel.setForeground(new Color(200, 240, 255));
+        subtitleLabel.setBounds(0, 90, 600, 20);
+        existingLoginPagePanel.add(subtitleLabel);
 
-        // Password field
-        createLabel("Password", 150, 240, 300, 20, backgroundPanel);
-        JPasswordField passwordField = createPasswordField(150, 265, 300, 42, backgroundPanel);
+        // Username label
+        createLabel("Username", 150, 150, 300, 20, existingLoginPagePanel);
 
-        // Buttons
-        JButton loginButton = createButton("Login", 200, 330, 200, 42, backgroundPanel);
-        JButton backButton = createButton("Back", 200, 385, 200, 42, backgroundPanel);
+        // Username TextField
+        JTextField usernameField = createTextField(150, 175, 300, 42, existingLoginPagePanel);
 
-        // Action listener for login
+        // Password label
+        createLabel("Password", 150, 240, 300, 20, existingLoginPagePanel);
+
+        // Password PassField
+        JPasswordField passwordField = createPasswordField(150, 265, 300, 42, existingLoginPagePanel);
+
+        // Login button
+        JButton loginButton = createButton("Login", 200, 330, 200, 42, existingLoginPagePanel);
+
+        // Back button
+        JButton backButton = createButton("Back", 200, 385, 200, 42, existingLoginPagePanel);
+
         loginButton.addActionListener(a -> {
             String username = usernameField.getText();
             String password = new String(passwordField.getPassword());
@@ -105,8 +115,7 @@ class ExistingLoginPage extends JFrame {
                 return;
             }
 
-            String url = "jdbc:mysql://localhost:3306/3dec"; // Change DB name as needed
-            try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+            try (Connection con = DriverManager.getConnection(url, user, passwords)) {
                 String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
                 try (PreparedStatement pst = con.prepareStatement(sql)) {
                     pst.setString(1, username);
