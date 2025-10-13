@@ -5,7 +5,7 @@ import java.sql.*;
 
 class AdminDashboard extends JFrame {
 
-    // Styled label
+    // Creates labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -15,7 +15,7 @@ class AdminDashboard extends JFrame {
         return label;
     }
 
-    // Styled text field
+    // Creates TextFields
     private JTextField createTextField(int x, int y, int width, int height, JPanel panel) {
         JTextField field = new JTextField();
         field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
@@ -31,7 +31,7 @@ class AdminDashboard extends JFrame {
         return field;
     }
 
-    // Styled button
+    // Creates buttons
     private JButton createButton(String text, int x, int y, int width, int height, JPanel panel, Color borderColor, Color textColor, Color bgColor) {
         JButton button = new JButton(text);
         button.setFont(new Font("Segoe UI", Font.BOLD, 16));
@@ -52,65 +52,76 @@ class AdminDashboard extends JFrame {
 
     AdminDashboard() {
 
-        // Main background
-        JPanel backgroundPanel = new JPanel(null);
-        backgroundPanel.setBackground(new Color(8, 20, 30));
-        setContentPane(backgroundPanel);
+        // Database Credentials
+        String url = EnvLoader.get("DB_URL");
+        String user = EnvLoader.get("DB_USER");
+        String password = EnvLoader.get("DB_PASSWORD");
 
-        // Title
-        JLabel title = new JLabel("Admin Dashboard", SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        title.setForeground(new Color(0, 230, 255));
-        title.setBounds(0, 20, 900, 40);
-        backgroundPanel.add(title);
+        // AdminDashboardPanel
+        JPanel adminDashboardPanel = new JPanel(null);
+        adminDashboardPanel.setBackground(new Color(8, 20, 30));
+        setContentPane(adminDashboardPanel);
 
-        // Filter labels and fields
-        createLabel("Min Balance:", 50, 80, 100, 25, backgroundPanel);
-        JTextField minField = createTextField(160, 80, 150, 30, backgroundPanel);
+        // Title label
+        JLabel titleLabel = new JLabel("Admin Dashboard", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setForeground(new Color(0, 230, 255));
+        titleLabel.setBounds(0, 20, 900, 40);
+        adminDashboardPanel.add(titleLabel);
 
-        createLabel("Max Balance:", 350, 80, 100, 25, backgroundPanel);
-        JTextField maxField = createTextField(460, 80, 150, 30, backgroundPanel);
+        // Minimum balance label
+        createLabel("Min Balance:", 50, 80, 100, 25, adminDashboardPanel);
+
+        // Minimum balance TestField
+        JTextField minField = createTextField(160, 80, 150, 30, adminDashboardPanel);
+
+        // Maximum balance label
+        createLabel("Max Balance:", 350, 80, 100, 25, adminDashboardPanel);
+
+        // Maximum balance TextField
+        JTextField maxField = createTextField(460, 80, 150, 30, adminDashboardPanel);
 
         // Filter button
-        JButton filterButton = createButton("Filter", 650, 80, 120, 30, backgroundPanel,
+        JButton filterButton = createButton("Filter", 650, 80, 120, 30, adminDashboardPanel,
                 new Color(0, 230, 255), Color.WHITE, new Color(0, 153, 76));
 
         // Back button
-        JButton backButton = createButton("Back", 780, 500, 100, 35, backgroundPanel,
+        JButton backButton = createButton("Back", 780, 500, 100, 35, adminDashboardPanel,
                 new Color(0, 230, 255), Color.WHITE, new Color(255, 51, 51));
+
         backButton.addActionListener(e -> {
             new AdminLogin();
             dispose();
         });
 
-        // Table
+        // User transactions table column names
         String[] columnNames = {"Username", "Balance", "Phone", "Email", "Gender", "WLimit"};
-        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
+
+        // Data table which stores data
+        DefaultTableModel transactionsTableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
-        JTable table = new JTable(tableModel);
-        table.getTableHeader().setReorderingAllowed(false);
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        table.setRowHeight(25);
-        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 16));
-        table.getTableHeader().setBackground(new Color(0, 230, 255));
-        table.getTableHeader().setForeground(Color.BLACK);
-        table.setGridColor(new Color(50, 50, 50));
 
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBounds(50, 130, 830, 350);
-        backgroundPanel.add(scrollPane);
+        // Transactions which shows ui for that data
+        JTable transactionsTable = new JTable(transactionsTableModel);
+        transactionsTable.getTableHeader().setReorderingAllowed(false);
+        transactionsTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        transactionsTable.setRowHeight(25);
+        transactionsTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 16));
+        transactionsTable.getTableHeader().setBackground(new Color(0, 230, 255));
+        transactionsTable.getTableHeader().setForeground(Color.BLACK);
+        transactionsTable.setGridColor(new Color(50, 50, 50));
 
-        // Database connection and table loading
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String password = EnvLoader.get("DB_PASSWORD");
+        // Allows table scrolling
+        JScrollPane transactionsTableScrollPane = new JScrollPane(transactionsTable);
+        transactionsTableScrollPane.setBounds(50, 130, 830, 350);
+        adminDashboardPanel.add(transactionsTableScrollPane);
 
         filterButton.addActionListener(a -> {
-            tableModel.setRowCount(0);
+            transactionsTableModel.setRowCount(0);
             double min = minField.getText().isEmpty() ? 0 : Double.parseDouble(minField.getText());
             double max = maxField.getText().isEmpty() ? Double.MAX_VALUE : Double.parseDouble(maxField.getText());
             try (Connection con = DriverManager.getConnection(url, user, password)) {
@@ -120,7 +131,7 @@ class AdminDashboard extends JFrame {
                     pst.setDouble(2, max);
                     ResultSet rs = pst.executeQuery();
                     while (rs.next()) {
-                        tableModel.addRow(new Object[]{
+                        transactionsTableModel.addRow(new Object[]{
                                 rs.getString("username"),
                                 rs.getDouble("balance"),
                                 rs.getString("phone"),
@@ -135,13 +146,12 @@ class AdminDashboard extends JFrame {
             }
         });
 
-        // Load table initially
         try (Connection con = DriverManager.getConnection(url, user, password)) {
             String sql = "SELECT * FROM users";
             try (PreparedStatement pst = con.prepareStatement(sql)) {
                 ResultSet rs = pst.executeQuery();
                 while (rs.next()) {
-                    tableModel.addRow(new Object[]{
+                    transactionsTableModel.addRow(new Object[]{
                             rs.getString("username"),
                             rs.getDouble("balance"),
                             rs.getString("phone"),
