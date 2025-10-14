@@ -44,69 +44,75 @@ class Profile extends JFrame {
     }
 
     Profile(String username) {
-        JPanel backgroundPanel = new JPanel(null);
-        backgroundPanel.setBackground(new Color(8, 20, 30));
-        setContentPane(backgroundPanel);
 
-        JLabel title = new JLabel("Profile Settings", SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        title.setForeground(new Color(0, 230, 255));
-        title.setBounds(0, 20, 800, 40);
-        backgroundPanel.add(title);
+        // DB Credentials
+        String url = EnvLoader.get("DB_URL");
+        String user = EnvLoader.get("DB_USER");
+        String password = EnvLoader.get("DB_PASSWORD");
 
-        createLabel("Full Name:", 150, 100, 150, 30, backgroundPanel);
-        JTextField nameField = createTextField(300, 100, 300, 30, backgroundPanel);
+        // Profile panel
+        JPanel profilePanel = new JPanel(null);
+        profilePanel.setBackground(new Color(8, 20, 30));
+        setContentPane(profilePanel);
 
-        createLabel("Email:", 150, 150, 150, 30, backgroundPanel);
-        JTextField emailField = createTextField(300, 150, 300, 30, backgroundPanel);
+        // Title label
+        JLabel titleLabel = new JLabel("Profile Settings", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setForeground(new Color(0, 230, 255));
+        titleLabel.setBounds(0, 20, 800, 40);
+        profilePanel.add(titleLabel);
 
-        createLabel("Phone:", 150, 200, 150, 30, backgroundPanel);
-        JTextField phoneField = createTextField(300, 200, 300, 30, backgroundPanel);
+        // Full name label
+        createLabel("Full Name:", 150, 100, 150, 30, profilePanel);
 
-        createLabel("Account No:", 150, 250, 150, 30, backgroundPanel);
-        JTextField accountField = createTextField(300, 250, 300, 30, backgroundPanel);
+        // Full name TextField
+        JTextField nameTextField = createTextField(300, 100, 300, 30, profilePanel);
 
-        createLabel("Balance:", 150, 300, 150, 30, backgroundPanel);
-        JTextField balanceField = createTextField(300, 300, 300, 30, backgroundPanel);
+        // Email label
+        createLabel("Email:", 150, 150, 150, 30, profilePanel);
 
-        createLabel("Last Login:", 150, 350, 150, 30, backgroundPanel);
-        JTextField lastLoginField = createTextField(300, 350, 300, 30, backgroundPanel);
+        // Email TextField
+        JTextField emailTextField = createTextField(300, 150, 300, 30, profilePanel);
 
-        JButton updateBtn = createButton("Update Info", 180, 410, 150, 42, backgroundPanel);
-        JButton changePassBtn = createButton("Change Password", 350, 410, 200, 42, backgroundPanel);
-        JButton deleteBtn = createButton("Delete Account", 180, 470, 150, 42, backgroundPanel);
-        JButton backBtn = createButton("Back", 350, 470, 200, 42, backgroundPanel);
+        // Phone label
+        createLabel("Phone:", 150, 200, 150, 30, profilePanel);
 
-        try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/3dec", "root", "your_password")) {
-            String sql = "SELECT fullname, email, phone, account_number, balance, last_login FROM users WHERE username=?";
-            try (PreparedStatement pst = con.prepareStatement(sql)) {
-                pst.setString(1, username);
-                ResultSet rs = pst.executeQuery();
-                if (rs.next()) {
-                    nameField.setText(rs.getString("fullname"));
-                    emailField.setText(rs.getString("email"));
-                    phoneField.setText(rs.getString("phone"));
-                    accountField.setText(rs.getString("account_number"));
-                    balanceField.setText("₹" + rs.getDouble("balance"));
-                    lastLoginField.setText(rs.getString("last_login"));
-                }
-            }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, e.getMessage());
-        }
+        // Phone TextField
+        JTextField phoneTextField = createTextField(300, 200, 300, 30, profilePanel);
 
-        updateBtn.addActionListener(a -> {
-            nameField.setEditable(true);
-            emailField.setEditable(true);
-            phoneField.setEditable(true);
+        // Account number label
+        createLabel("Account No:", 150, 250, 150, 30, profilePanel);
+
+        // Account number TextField
+        JTextField accountTextField = createTextField(300, 250, 300, 30, profilePanel);
+
+        // Balance label
+        createLabel("Balance:", 150, 300, 150, 30, profilePanel);
+
+        // Balance TextField
+        JTextField balanceTextField = createTextField(300, 300, 300, 30, profilePanel);
+
+        // Last login label
+        createLabel("Last Login:", 150, 350, 150, 30, profilePanel);
+
+        // Last login TextField
+        JTextField lastLoginField = createTextField(300, 350, 300, 30, profilePanel);
+
+        // Upload button
+        JButton updateButton = createButton("Update Info", 180, 410, 150, 42, profilePanel);
+
+        updateButton.addActionListener(a -> {
+            nameTextField.setEditable(true);
+            emailTextField.setEditable(true);
+            phoneTextField.setEditable(true);
             int result = JOptionPane.showConfirmDialog(null, "Save changes?", "Confirm", JOptionPane.YES_NO_OPTION);
             if (result == JOptionPane.YES_OPTION) {
                 try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/3dec", "root", "your_password")) {
                     String sql = "UPDATE users SET fullname=?, email=?, phone=? WHERE username=?";
                     try (PreparedStatement pst = con.prepareStatement(sql)) {
-                        pst.setString(1, nameField.getText());
-                        pst.setString(2, emailField.getText());
-                        pst.setString(3, phoneField.getText());
+                        pst.setString(1, nameTextField.getText());
+                        pst.setString(2, emailTextField.getText());
+                        pst.setString(3, phoneTextField.getText());
                         pst.setString(4, username);
                         pst.executeUpdate();
                         JOptionPane.showMessageDialog(null, "Profile updated successfully!");
@@ -115,12 +121,15 @@ class Profile extends JFrame {
                     JOptionPane.showMessageDialog(null, e.getMessage());
                 }
             }
-            nameField.setEditable(false);
-            emailField.setEditable(false);
-            phoneField.setEditable(false);
+            nameTextField.setEditable(false);
+            emailTextField.setEditable(false);
+            phoneTextField.setEditable(false);
         });
 
-        changePassBtn.addActionListener(a -> {
+        // Change button
+        JButton changePasswordButton = createButton("Change Password", 350, 410, 200, 42, profilePanel);
+
+        changePasswordButton.addActionListener(a -> {
             String newPass = JOptionPane.showInputDialog("Enter new password:");
             if (newPass != null && !newPass.isEmpty()) {
                 try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/3dec", "root", "your_password")) {
@@ -137,7 +146,10 @@ class Profile extends JFrame {
             }
         });
 
-        deleteBtn.addActionListener(a -> {
+        // Delete button
+        JButton deleteButton = createButton("Delete Account", 180, 470, 150, 42, profilePanel);
+
+        deleteButton.addActionListener(a -> {
             int result = JOptionPane.showConfirmDialog(null, "Are you sure you want to delete your account?", "Confirm", JOptionPane.YES_NO_OPTION);
             if (result == JOptionPane.YES_OPTION) {
                 try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/3dec", "root", "your_password")) {
@@ -155,11 +167,33 @@ class Profile extends JFrame {
             }
         });
 
-        backBtn.addActionListener(a -> {
+        // Back button
+        JButton backButton = createButton("Back", 350, 470, 200, 42, profilePanel);
+
+        backButton.addActionListener(a -> {
             new HomePage(username);
             dispose();
         });
 
+        try (Connection con = DriverManager.getConnection(url, user, password)) {
+            String sql = "SELECT fullname, email, phone, account_number, balance, last_login FROM users WHERE username=?";
+            try (PreparedStatement pst = con.prepareStatement(sql)) {
+                pst.setString(1, username);
+                ResultSet rs = pst.executeQuery();
+                if (rs.next()) {
+                    nameTextField.setText(rs.getString("fullname"));
+                    emailTextField.setText(rs.getString("email"));
+                    phoneTextField.setText(rs.getString("phone"));
+                    accountTextField.setText(rs.getString("account_number"));
+                    balanceTextField.setText("₹" + rs.getDouble("balance"));
+                    lastLoginField.setText(rs.getString("last_login"));
+                }
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
+        }
+
+        // Frame settings
         setTitle("VaultEdge - Profile Settings");
         setSize(800, 580);
         setLocationRelativeTo(null);
