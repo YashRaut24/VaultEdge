@@ -59,29 +59,38 @@ class Withdraw extends JFrame {
     }
 
     Withdraw(String username) {
-        // Background panel
+
+        // DB Credentials
+        String url = EnvLoader.get("DB_URL");
+        String user = EnvLoader.get("DB_USER");
+        String password = EnvLoader.get("DB_PASSWORD");
+
+        // Withdraw page
         JPanel backgroundPanel = new JPanel(null);
         backgroundPanel.setBackground(new Color(8, 20, 30));
         setContentPane(backgroundPanel);
 
-        // Title
-        JLabel title = new JLabel("Withdraw Money 💸", SwingConstants.CENTER);
-        title.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        title.setForeground(new Color(0, 230, 255));
-        title.setBounds(0, 25, 800, 40);
-        backgroundPanel.add(title);
+        // Title label
+        JLabel titleLabel = new JLabel("Withdraw Money 💸", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        titleLabel.setForeground(new Color(0, 230, 255));
+        titleLabel.setBounds(0, 25, 800, 40);
+        backgroundPanel.add(titleLabel);
 
-        // Current Balance
         double currentBalance = fetchBalance(username);
         JLabel balanceLabel = createLabel("Current Balance: ₹" + currentBalance, 270, 90, 300, 30, backgroundPanel);
 
-        // Amount input
+        // Amount label
         createLabel("Enter Amount:", 180, 150, 200, 30, backgroundPanel);
-        JTextField amountField = createTextField(350, 150, 250, 35, backgroundPanel);
 
-        // Withdrawal Method
+        // Amount TextFields
+        JTextField amountTextField = createTextField(350, 150, 250, 35, backgroundPanel);
+
+        // Withdrawal label
         createLabel("Withdrawal Method:", 180, 210, 200, 30, backgroundPanel);
-        String[] methods = {"VaultEdge Wallet", "Linked Bank Account", "UPI Transfer", "Virtual Card Transfer"};
+
+        // Withdrawal TextField
+        String[] methods = {"VaultEdge Wallet", "UPI Transfer", "Virtual Card Transfer"};
         JComboBox<String> methodBox = createComboBox(methods, 350, 210, 250, 35, backgroundPanel);
 
         // Note (optional)
@@ -92,21 +101,22 @@ class Withdraw extends JFrame {
         JLabel statusLabel = createLabel("Status: Waiting for action...", 270, 400, 400, 30, backgroundPanel);
         statusLabel.setForeground(new Color(0, 200, 255));
 
-        // Buttons
-        JButton withdrawBtn = createButton("Withdraw", 230, 330, 150, 42, backgroundPanel,
+        // Withdraw button
+        JButton withdrawButton = createButton("Withdraw", 230, 330, 150, 42, backgroundPanel,
                 new Color(0, 230, 255), Color.WHITE, new Color(0, 153, 76));
 
-        JButton cancelBtn = createButton("Cancel", 430, 330, 150, 42, backgroundPanel,
+        // Cancel button
+        JButton cancelButton = createButton("Cancel", 430, 330, 150, 42, backgroundPanel,
                 new Color(0, 230, 255), Color.WHITE, new Color(255, 51, 51));
 
         // Button Actions
-        cancelBtn.addActionListener(a -> {
+        cancelButton.addActionListener(a -> {
             new HomePage(username);
             dispose();
         });
 
-        withdrawBtn.addActionListener(a -> {
-            String amtStr = amountField.getText().trim();
+        withdrawButton.addActionListener(a -> {
+            String amtStr = amountTextField.getText().trim();
             if (amtStr.isEmpty()) {
                 JOptionPane.showMessageDialog(null, "Please enter an amount");
                 return;
@@ -132,7 +142,7 @@ class Withdraw extends JFrame {
                 updateBalance(username, newBalance);
                 updatePassbook(username, "Withdraw via " + method, amount, newBalance, note);
 
-                amountField.setText("");
+                amountTextField.setText("");
                 noteField.setText("");
                 balanceLabel.setText("Current Balance: ₹" + newBalance);
                 statusLabel.setText("Status: Withdrawal Successful ✅");
@@ -149,10 +159,17 @@ class Withdraw extends JFrame {
         setVisible(true);
     }
 
+
+    // Fetches balance amount
     private double fetchBalance(String username) {
+
+        // DB Credentials
+        String url = EnvLoader.get("DB_URL");
+        String user = EnvLoader.get("DB_USER");
+        String password = EnvLoader.get("DB_PASSWORD");
+
         double balance = 0.0;
-        String url = "jdbc:mysql://localhost:3306/3dec";
-        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+        try (Connection con = DriverManager.getConnection(url, user, password)) {
             String sql = "SELECT balance FROM users WHERE username = ?";
             try (PreparedStatement pst = con.prepareStatement(sql)) {
                 pst.setString(1, username);
@@ -166,8 +183,13 @@ class Withdraw extends JFrame {
     }
 
     private void updateBalance(String username, double balance) {
-        String url = "jdbc:mysql://localhost:3306/3dec";
-        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+
+        // DB Credentials
+        String url = EnvLoader.get("DB_URL");
+        String user = EnvLoader.get("DB_USER");
+        String password = EnvLoader.get("DB_PASSWORD");
+
+        try (Connection con = DriverManager.getConnection(url, user, password)) {
             String sql = "UPDATE users SET balance = ? WHERE username = ?";
             try (PreparedStatement pst = con.prepareStatement(sql)) {
                 pst.setDouble(1, balance);
@@ -180,8 +202,13 @@ class Withdraw extends JFrame {
     }
 
     private void updatePassbook(String username, String desc, double amount, double balance, String note) {
-        String url = "jdbc:mysql://localhost:3306/3dec";
-        try (Connection con = DriverManager.getConnection(url, "root", "your_password")) {
+
+        // DB Credentials
+        String url = EnvLoader.get("DB_URL");
+        String user = EnvLoader.get("DB_USER");
+        String password = EnvLoader.get("DB_PASSWORD");
+
+        try (Connection con = DriverManager.getConnection(url, user, password)) {
             String sql = "INSERT INTO transactions(username, description, amount, balance, note) VALUES(?,?,?,?,?)";
             try (PreparedStatement pst = con.prepareStatement(sql)) {
                 pst.setString(1, username);
