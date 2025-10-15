@@ -72,14 +72,14 @@ class LandingPage extends JFrame {
         // Title label
         JLabel titleLabel = new JLabel("VaultEdge", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 46));
-        titleLabel.setForeground(new Color(0, 230, 255)); // bright cyan
+        titleLabel.setForeground(new Color(0, 230, 255));
         titleLabel.setBounds(0, 20, 900, 55);
         backgroundImagePanel.add(titleLabel);
 
         // Welcome label
         JLabel welcomeLabel = new JLabel("Welcome to VaultEdge – Your Virtual Banking Assistant", SwingConstants.CENTER);
         welcomeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 18));
-        welcomeLabel.setForeground(new Color(200, 240, 255)); // light cyan
+        welcomeLabel.setForeground(new Color(200, 240, 255));
         welcomeLabel.setBounds(0, 80, 900, 30);
         backgroundImagePanel.add(welcomeLabel);
 
@@ -143,14 +143,14 @@ class LandingPage extends JFrame {
         // Stat1 label
         JLabel stats1Label = new JLabel("👥 Serving 1200+ Virtual Customers");
         stats1Label.setFont(new Font("Segoe UI Emoji", Font.BOLD, 18));
-        stats1Label.setForeground(Color.WHITE); // cyan
+        stats1Label.setForeground(Color.WHITE);
         stats1Label.setBounds(50, 370, 400, 30);
         backgroundImagePanel.add(stats1Label);
 
         // Stat2 label
         JLabel stats2Label = new JLabel("✅ Processed 10,000+ Transactions Securely");
         stats2Label.setFont(new Font("Segoe UI Emoji", Font.BOLD, 18));
-        stats2Label.setForeground(Color.WHITE); // cyan
+        stats2Label.setForeground(Color.WHITE);
         stats2Label.setBounds(450, 370, 450, 30);
         backgroundImagePanel.add(stats2Label);
 
