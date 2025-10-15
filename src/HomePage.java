@@ -108,14 +108,14 @@ class HomePage extends JFrame {
 
 
         try (Connection con = DriverManager.getConnection(url, user, password)) {
-            String sql = "SELECT account_type, balance, id FROM users WHERE username=?";
+            String sql = "SELECT account_type, balance, account_number FROM users WHERE username=?";
             PreparedStatement pst = con.prepareStatement(sql);
             pst.setString(1, username);
             ResultSet rs = pst.executeQuery();
 
             if (rs.next()) {
                 accountTypeLabel.setText("Account Type: " + rs.getString("account_type"));
-                accountNumberLabel.setText("Account No: VE" + rs.getInt("id"));
+                accountNumberLabel.setText("Account No: " + rs.getString("account_number"));
                 balanceLabel.setText("Balance: ₹" + rs.getDouble("balance"));
             }
 
