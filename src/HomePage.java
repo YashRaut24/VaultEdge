@@ -1,6 +1,11 @@
 import javax.swing.*;
 import java.awt.*;
 import java.sql.*;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.general.DefaultPieDataset;
+import org.jfree.data.category.DefaultCategoryDataset;
 
 class HomePage extends JFrame {
 
@@ -64,48 +69,91 @@ class HomePage extends JFrame {
         JLabel titleLabel = new JLabel("Welcome, " + username, SwingConstants.CENTER);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
         titleLabel.setForeground(new Color(0, 230, 255));
-        titleLabel.setBounds(0, 25, 900, 40);
+        titleLabel.setBounds(0, 25, 700, 40);
         homePagePanel.add(titleLabel);
 
         // Account type label
-        JLabel accountTypeLabel = createLabel("Account Type: ---", 120, 90, 300, 25, homePagePanel, 16);
+        JLabel accountTypeLabel = createLabel("Account Type: ---", 40, 90, 300, 25, homePagePanel, 16);
 
         // Account number label
-        JLabel accountNumberLabel = createLabel("Account No: ---", 120, 120, 300, 25, homePagePanel, 16);
+        JLabel accountNumberLabel = createLabel("Account No: ---", 40, 120, 300, 25, homePagePanel, 16);
 
         // Balance label
-        JLabel balanceLabel = createLabel("Balance: ₹0.00", 120, 150, 300, 25, homePagePanel, 16);
+        JLabel balanceLabel = createLabel("Balance: ₹0.00", 40, 150, 300, 25, homePagePanel, 16);
 
         // Deposit button
-        JButton depositButton = createButton("Deposit", 120, 210, 200, 42, homePagePanel);
+        JButton depositButton = createButton("Deposit", 40, 200, 150, 42, homePagePanel);
         depositButton.addActionListener(a -> { new DepositPage(username); dispose(); });
 
         // Withdraw button
-        JButton withdrawButton = createButton("Withdraw", 370, 210, 200, 42, homePagePanel);
+        JButton withdrawButton = createButton("Withdraw", 215, 200, 150, 42, homePagePanel);
         withdrawButton.addActionListener(a -> { new Withdraw(username); dispose(); });
 
         // Transfer button
-        JButton transferButton = createButton("Transfer", 620, 210, 200, 42, homePagePanel);
+        JButton transferButton = createButton("Transfer", 215, 270, 150, 42, homePagePanel);
         transferButton.addActionListener(a -> new TransferPage(username));
 
         // Passbook button
-        JButton passbookButton = createButton("Passbook", 120, 280, 200, 42, homePagePanel);
+        JButton passbookButton = createButton("Passbook", 40, 270, 150, 42, homePagePanel);
         passbookButton.addActionListener(a -> new PassbookPage(username));
 
         // Settings button
-        JButton settingsButton = createButton("Profile Settings", 370, 280, 200, 42, homePagePanel);
+        JButton settingsButton = createButton("Profile Settings", 590, 30, 150, 42, homePagePanel);
         settingsButton.addActionListener(a -> new Profile(username));
 
+        // View analytics button
+        JButton viewAnalyticsButton = createButton("View Analytics", 590, 300, 150, 42, homePagePanel);
+        viewAnalyticsButton.addActionListener(a -> new Profile(username));
+
+        // Creates data for pie chart
+        DefaultPieDataset pieDataset = new DefaultPieDataset();
+
+        try (Connection con = DriverManager.getConnection(url, user, password)) {
+            String chartSql = "SELECT type, SUM(amount) AS total FROM transactions WHERE username=? AND MONTH(date) = MONTH(CURRENT_DATE) GROUP BY type";
+            try (PreparedStatement pst = con.prepareStatement(chartSql)){
+                    pst.setString(1, username);
+
+                    try (ResultSet rs = pst.executeQuery()) {
+                        while (rs.next()) {
+                            String type = rs.getString("type");
+                            double total = rs.getDouble("total");
+                            pieDataset.setValue(type, total);
+                        }
+                    }
+
+            } catch (SQLException pstEx) {
+                pstEx.printStackTrace();
+                JOptionPane.showMessageDialog(this, "PreparedStatement Error: " + pstEx.getMessage());
+            }
+
+        } catch (SQLException connEx) {
+            connEx.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Database Connection Error: " + connEx.getMessage());
+        }
+
+        // Displays pie chart
+        JFreeChart pieChart = ChartFactory.createPieChart("Monthly Transactions", pieDataset, true, true, false);
+
+        org.jfree.chart.plot.PiePlot plot = (org.jfree.chart.plot.PiePlot) pieChart.getPlot();
+        plot.setLabelGenerator(new org.jfree.chart.labels.StandardPieSectionLabelGenerator("{0}: ₹{1} ({2})"));
+        plot.setBackgroundPaint(new Color(8, 20, 30));
+        plot.setOutlineVisible(false);
+
+        // Creates space for pie chart
+        ChartPanel chartPanel = new ChartPanel(pieChart);
+        chartPanel.setBounds(490, 90, 250, 200);
+        chartPanel.setBackground(new Color(8, 20, 30));
+        homePagePanel.add(chartPanel);
+
         // Logout button
-        JButton logoutButton = createButton("Logout", 620, 280, 200, 42, homePagePanel);
+        JButton logoutButton = createButton("Logout", 620, 510, 120, 42, homePagePanel);
         logoutButton.addActionListener(a -> { new LandingPage(); dispose(); });
 
         // Recent transaction label
-        createLabel("Recent Transactions", 120, 340, 300, 25, homePagePanel, 17);
+        createLabel("Recent Transactions", 40, 325, 300, 25, homePagePanel, 17);
 
         // Transaction table
-        JTable transactionTable = createTransactionTable(120, 370, 700, 150, homePagePanel);
-
+        JTable transactionTable = createTransactionTable(40, 350, 700, 150, homePagePanel);
 
         try (Connection con = DriverManager.getConnection(url, user, password)) {
             String sql = "SELECT account_type, balance, account_number FROM users WHERE username=?";
@@ -139,7 +187,7 @@ class HomePage extends JFrame {
         }
 
         setTitle("VaultEdge - Home");
-        setSize(900, 600);
+        setSize(800, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
