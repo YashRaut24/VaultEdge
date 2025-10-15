@@ -138,14 +138,39 @@ class Withdraw extends JFrame {
                     return;
                 }
 
-                double newBalance = balance - amount;
-                updateBalance(username, newBalance);
-                updatePassbook(username, "Withdraw via " + method, amount, newBalance, note);
+                try (Connection con = DriverManager.getConnection(url, user, password)) {
+                    con.setAutoCommit(false); // Start transaction
 
-                amountTextField.setText("");
-                noteField.setText("");
-                balanceLabel.setText("Current Balance: ₹" + newBalance);
-                statusLabel.setText("Status: Withdrawal Successful ✅");
+                    // Deduct balance
+                    try (PreparedStatement pst = con.prepareStatement("UPDATE users SET balance = ? WHERE username = ?")) {
+                        pst.setDouble(1, balance - amount);
+                        pst.setString(2, username);
+                        pst.executeUpdate();
+                    }
+
+                    // Insert into passbook
+                    try (PreparedStatement pst = con.prepareStatement(
+                            "INSERT INTO transactions(username, description, amount, balance, note) VALUES(?,?,?,?,?)")) {
+                        pst.setString(1, username);
+                        pst.setString(2, "Withdraw via " + method);
+                        pst.setDouble(3, amount);
+                        pst.setDouble(4, balance - amount);
+                        pst.setString(5, note);
+                        pst.executeUpdate();
+                    }
+
+                    con.commit(); // Commit transaction
+
+                    amountTextField.setText("");
+                    noteField.setText("");
+                    balanceLabel.setText("Current Balance: ₹" + (balance - amount));
+                    statusLabel.setText("Status: Withdrawal Successful ✅");
+
+                } catch (Exception e) {
+                    statusLabel.setText("Status: Withdrawal Failed ❌");
+                    JOptionPane.showMessageDialog(null, e.getMessage());
+                }
+
             } catch (NumberFormatException e) {
                 statusLabel.setText("Status: Invalid input ❌");
             }

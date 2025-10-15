@@ -139,7 +139,7 @@ class DepositPage extends JFrame {
                 double amount = Double.parseDouble(input);
                 double total = finalBalance + amount;
 
-                try (Connection con = DriverManager.getConnection(url, user, user)) {
+                try (Connection con = DriverManager.getConnection(url, user, password)) {
                     String sql = "UPDATE users SET balance = ? WHERE username = ?";
                     try (PreparedStatement pst = con.prepareStatement(sql)) {
                         pst.setDouble(1, total);
@@ -179,13 +179,15 @@ class DepositPage extends JFrame {
         String password = EnvLoader.get("DB_PASSWORD");
 
         try (Connection con = DriverManager.getConnection(url, user, password)) {
-            String sql = "INSERT INTO transactions(username, description, amount, balance, note) VALUES(?,?,?,?,?)";
+            String sql = "INSERT INTO transactions(username, description, amount, balance, note, type, balance_after) VALUES(?,?,?,?,?,?,?)";
             try (PreparedStatement pst = con.prepareStatement(sql)) {
                 pst.setString(1, username);
                 pst.setString(2, desc);
                 pst.setDouble(3, amount);
                 pst.setDouble(4, balance);
                 pst.setString(5, note);
+                pst.setString(6, "Deposit");
+                pst.setDouble(7, balance);
                 pst.executeUpdate();
             }
         } catch (Exception e) {

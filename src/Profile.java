@@ -107,7 +107,7 @@ class Profile extends JFrame {
             phoneTextField.setEditable(true);
             int result = JOptionPane.showConfirmDialog(null, "Save changes?", "Confirm", JOptionPane.YES_NO_OPTION);
             if (result == JOptionPane.YES_OPTION) {
-                try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/3dec", "root", "your_password")) {
+                try (Connection con = DriverManager.getConnection(url, user, password)) {
                     String sql = "UPDATE users SET fullname=?, email=?, phone=? WHERE username=?";
                     try (PreparedStatement pst = con.prepareStatement(sql)) {
                         pst.setString(1, nameTextField.getText());
@@ -132,7 +132,7 @@ class Profile extends JFrame {
         changePasswordButton.addActionListener(a -> {
             String newPass = JOptionPane.showInputDialog("Enter new password:");
             if (newPass != null && !newPass.isEmpty()) {
-                try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/3dec", "root", "your_password")) {
+                try (Connection con = DriverManager.getConnection(url, user, password)) {
                     String sql = "UPDATE users SET password=? WHERE username=?";
                     try (PreparedStatement pst = con.prepareStatement(sql)) {
                         pst.setString(1, newPass);
@@ -152,7 +152,7 @@ class Profile extends JFrame {
         deleteButton.addActionListener(a -> {
             int result = JOptionPane.showConfirmDialog(null, "Are you sure you want to delete your account?", "Confirm", JOptionPane.YES_NO_OPTION);
             if (result == JOptionPane.YES_OPTION) {
-                try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/3dec", "root", "your_password")) {
+                try (Connection con = DriverManager.getConnection(url, user, password)) {
                     String sql = "DELETE FROM users WHERE username=?";
                     try (PreparedStatement pst = con.prepareStatement(sql)) {
                         pst.setString(1, username);

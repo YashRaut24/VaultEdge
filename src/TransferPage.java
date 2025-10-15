@@ -128,20 +128,51 @@ class TransferPage extends JFrame {
                 return;
             }
 
-            updateBalance(username, senderBalance - amount);
-            updatePassbook(username, "Transferred to " + receiver + (note.isEmpty() ? "" : " (" + note + ")"), -amount, senderBalance - amount);
+            try (Connection con = DriverManager.getConnection(url, user, password)) {
+                con.setAutoCommit(false);
 
-            double receiverBalance = fetchBalance(receiver);
-            updateBalance(receiver, receiverBalance + amount);
-            updatePassbook(receiver, "Received from " + username + (note.isEmpty() ? "" : " (" + note + ")"), amount, receiverBalance + amount);
+                // Deduct sender
+                try (PreparedStatement pst = con.prepareStatement("UPDATE users SET balance=? WHERE username=?")) {
+                    pst.setDouble(1, senderBalance - amount);
+                    pst.setString(2, username);
+                    pst.executeUpdate();
+                }
 
-            statusLabel.setText("Transfer Successful");
-            receiverTextField.setText("");
-            amountField.setText("");
-            noteTextField.setText("");
+                try (PreparedStatement pst = con.prepareStatement("INSERT INTO transactions(username, description, amount, balance) VALUES(?,?,?,?)")) {
+                    pst.setString(1, username);
+                    pst.setString(2, "Transferred to " + receiver + (note.isEmpty() ? "" : " (" + note + ")"));
+                    pst.setDouble(3, -amount);
+                    pst.setDouble(4, senderBalance - amount);
+                    pst.executeUpdate();
+                }
 
-            balanceLabel.setText("Current Balance: ₹" + fetchBalance(username));
+                double receiverBalance = fetchBalance(receiver);
+                try (PreparedStatement pst = con.prepareStatement("UPDATE users SET balance=? WHERE username=?")) {
+                    pst.setDouble(1, receiverBalance + amount);
+                    pst.setString(2, receiver);
+                    pst.executeUpdate();
+                }
+
+                try (PreparedStatement pst = con.prepareStatement("INSERT INTO transactions(username, description, amount, balance) VALUES(?,?,?,?)")) {
+                    pst.setString(1, receiver);
+                    pst.setString(2, "Received from " + username + (note.isEmpty() ? "" : " (" + note + ")"));
+                    pst.setDouble(3, amount);
+                    pst.setDouble(4, receiverBalance + amount);
+                    pst.executeUpdate();
+                }
+
+                con.commit(); // Commit transaction
+                statusLabel.setText("✅ Transfer Successful");
+                receiverTextField.setText("");
+                amountField.setText("");
+                noteTextField.setText("");
+                balanceLabel.setText("Current Balance: ₹" + fetchBalance(username));
+
+            } catch (Exception e) {
+                statusLabel.setText("❌ Transfer failed: " + e.getMessage());
+            }
         });
+
 
         // Frame settings
         setTitle("VaultEdge - Transfer Funds");
