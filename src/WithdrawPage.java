@@ -149,17 +149,22 @@ class Withdraw extends JFrame {
                     }
 
                     // Insert into passbook
+                    // Insert into transactions/passbook
                     try (PreparedStatement pst = con.prepareStatement(
-                            "INSERT INTO transactions(username, description, amount, balance, note) VALUES(?,?,?,?,?)")) {
+                            "INSERT INTO transactions(username, description, type, amount, balance, balance_after, note, date) " +
+                                    "VALUES(?,?,?,?,?,?,?,NOW())")) {
                         pst.setString(1, username);
                         pst.setString(2, "Withdraw via " + method);
-                        pst.setDouble(3, amount);
-                        pst.setDouble(4, balance - amount);
-                        pst.setString(5, note);
+                        pst.setString(3, "Withdraw");
+                        pst.setDouble(4, amount);
+                        pst.setDouble(5, balance);
+                        pst.setDouble(6, balance - amount);
+                        pst.setString(7, note);
                         pst.executeUpdate();
                     }
 
-                    con.commit(); // Commit transaction
+
+                    con.commit();
 
                     amountTextField.setText("");
                     noteField.setText("");
