@@ -220,7 +220,7 @@ class NewloginPage extends JFrame {
                     pst.setString(2, dob);
                     pst.setString(3, address);
                     pst.setString(4, username);
-                    pst.setString(5, password); // plain password
+                    pst.setString(5, password);
                     pst.setString(6, email);
                     pst.setString(7, phone);
                     pst.setString(8, gender);
@@ -229,7 +229,7 @@ class NewloginPage extends JFrame {
 
                     pst.executeUpdate();
                     JOptionPane.showMessageDialog(null, "Signup Successful! Welcome to VaultEdge.");
-                    new HomePage(username);
+                    new NewloginPage();
                     dispose();
                 }
             } catch (NumberFormatException e) {
