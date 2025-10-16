@@ -13,9 +13,9 @@ import org.jfree.chart.plot.PlotOrientation;
 class Analysis extends JFrame {
 
     private JComboBox<String> monthCombo, yearCombo;
-    private JLabel updatedLabel, insightLabel;
+    private JLabel updatedLabel, insightLabel, noDataLabel;
 
-    // Create label
+    // Create labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel, int fontSize) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Segoe UI", Font.PLAIN, fontSize));
@@ -60,15 +60,15 @@ class Analysis extends JFrame {
         title.setBounds(0, 20, 800, 40);
         analyticsPanel.add(title);
 
-        // Month label
+        // Month Label
         createLabel("Month:", 40, 80, 80, 25, analyticsPanel, 16);
 
-        // Months dropdown
+        // Month dropdown
         monthCombo = new JComboBox<>(new String[]{"All", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"});
         monthCombo.setBounds(110, 80, 120, 25);
         analyticsPanel.add(monthCombo);
 
-        // Year label
+        // Year Label
         createLabel("Year:", 260, 80, 60, 25, analyticsPanel, 16);
 
         // Year dropdown
@@ -76,30 +76,34 @@ class Analysis extends JFrame {
         yearCombo.setBounds(310, 80, 100, 25);
         analyticsPanel.add(yearCombo);
 
-        // Filter button
+        // Filter Button
         JButton filterButton = createButton("Filter", 430, 77, 100, 30, analyticsPanel);
 
-        // Back button
+        // Last Updated Label
+        updatedLabel = createLabel("Last Updated: " + new SimpleDateFormat("dd MMM yyyy").format(new Date()), 550, 510, 300, 25, analyticsPanel, 13);
+
+        filterButton.addActionListener(e -> {
+            String month = (String) monthCombo.getSelectedItem();
+            String year = (String) yearCombo.getSelectedItem();
+            analyticsPanel.removeAll();
+            recreateHeader(analyticsPanel, username, month, year);
+            drawCharts(username, analyticsPanel, url, user, password, month, year);
+            analyticsPanel.revalidate();
+            analyticsPanel.repaint();
+        });
+
+        // Draw charts initially
+        drawCharts(username, analyticsPanel, url, user, password, "All", "All");
+
+        // Back Button
         JButton backButton = createButton("Back", 650, 77, 100, 30, analyticsPanel);
+
         backButton.addActionListener(e -> {
             new HomePage(username);
             dispose();
         });
 
-        // Last updated label
-        updatedLabel = createLabel("Last Updated: " + new SimpleDateFormat("dd MMM yyyy").format(new Date()),550, 510, 300, 25, analyticsPanel, 13);
-
-        // Draw charts & data
-        drawCharts(username, analyticsPanel, url, user, password, "All", "All");
-
-        filterButton.addActionListener(e -> {
-            String selectedMonth = (String) monthCombo.getSelectedItem();
-            String selectedYear = (String) yearCombo.getSelectedItem();
-            getContentPane().removeAll();
-            new Analysis(username).applyFilters(selectedMonth, selectedYear);
-            dispose();
-        });
-
+        // Frame settings
         setTitle("VaultEdge - Analytics");
         setSize(820, 600);
         setLocationRelativeTo(null);
@@ -107,139 +111,247 @@ class Analysis extends JFrame {
         setVisible(true);
     }
 
-    // Reload analytics with selected filters
-    private void applyFilters(String month, String year) {
-        new Analysis("User").drawCharts("User", new JPanel(), EnvLoader.get("DB_URL"),
-                EnvLoader.get("DB_USER"), EnvLoader.get("DB_PASSWORD"), month, year);
+    // Recreate header UI on filter refresh
+    private void recreateHeader(JPanel panel, String username, String month, String year) {
+        panel.setBackground(new Color(8, 20, 30));
+
+        // Title label
+        JLabel title = new JLabel("VaultEdge - View Analytics", SwingConstants.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        title.setForeground(new Color(0, 230, 255));
+        title.setBounds(0, 20, 800, 40);
+        panel.add(title);
+
+        // Month label
+        createLabel("Month:", 40, 80, 80, 25, panel, 16);
+        panel.add(monthCombo);
+        panel.add(yearCombo);
+
+        // Filter button
+        JButton filterButton = createButton("Filter", 430, 77, 100, 30, panel);
+        filterButton.addActionListener(e -> {
+            String m = (String) monthCombo.getSelectedItem();
+            String y = (String) yearCombo.getSelectedItem();
+            panel.removeAll();
+            recreateHeader(panel, username, m, y);
+            drawCharts(username, panel, EnvLoader.get("DB_URL"), EnvLoader.get("DB_USER"), EnvLoader.get("DB_PASSWORD"), m, y);
+            panel.revalidate();
+            panel.repaint();
+        });
+
+        // Back button
+        JButton backButton = createButton("Back", 650, 77, 100, 30, panel);
+
+        backButton.addActionListener(e -> {
+            new HomePage(username);
+            dispose();
+        });
+
+        // Last updated label
+        updatedLabel = createLabel("Last Updated: " + new SimpleDateFormat("dd MMM yyyy").format(new Date()), 550, 510, 300, 25, panel, 13);
     }
 
-    // Pie Chart: Deposit vs Withdrawal
+    // Creates Chart & Data
     private void drawCharts(String username, JPanel analyticsPanel, String url, String user, String password, String monthFilter, String yearFilter) {
-        // Storing data for pie chart
-        DefaultPieDataset pieDataset = new DefaultPieDataset();
-
-        try (Connection con = DriverManager.getConnection(url, user, password)) {
-            String analyticsSql = "SELECT LOWER(type) AS type, SUM(amount) AS total FROM transactions WHERE username=? GROUP BY LOWER(type)";
-            PreparedStatement pst = con.prepareStatement(analyticsSql);
-            pst.setString(1, username);
-            ResultSet rs = pst.executeQuery();
-            while (rs.next()) {
-                pieDataset.setValue(rs.getString("type"), rs.getDouble("total"));
-            }
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error loading pie chart: " + ex.getMessage());
-        }
-
-        // Creates Pie chart
-        JFreeChart pieChart = ChartFactory.createPieChart("Deposit vs Withdrawal Ratio", pieDataset, true, true, false);
-        pieChart.setBackgroundPaint(new Color(8, 20, 30));
-        org.jfree.chart.plot.PiePlot plot = (org.jfree.chart.plot.PiePlot) pieChart.getPlot();
-        plot.setBackgroundPaint(new Color(8, 20, 30));
-        plot.setOutlineVisible(false);
-        plot.setLabelGenerator(new org.jfree.chart.labels.StandardPieSectionLabelGenerator("{0}: ₹{1} ({2})"));
-
-        // Pie chart panel
-        ChartPanel piePanel = new ChartPanel(pieChart);
-        piePanel.setBounds(40, 130, 340, 250);
-        piePanel.setBackground(new Color(8, 20, 30));
-        analyticsPanel.add(piePanel);
 
         // Stores data for bar chart
         DefaultCategoryDataset barDataset = new DefaultCategoryDataset();
 
+        // Stores data for line chart
+        DefaultCategoryDataset lineDataset = new DefaultCategoryDataset();
+        boolean hasData = false;
+
         try (Connection con = DriverManager.getConnection(url, user, password)) {
-            String sql = """
-                SELECT MONTHNAME(date) AS month,SUM(CASE WHEN LOWER(type)='deposit' THEN amount ELSE 0 END) AS deposits,THEN amount ELSE 0 END) AS withdrawals
-                FROM transactions WHERE username=?GROUP BY MONTH(date), MONTHNAME(date) ORDER BY MONTH(date)
-                """;
+            String sql = "SELECT MONTHNAME(date) AS month, " +
+                    "SUM(CASE WHEN LOWER(type)='deposit' THEN amount ELSE 0 END) AS deposits, " +
+                    "SUM(CASE WHEN LOWER(type)='withdraw' THEN amount ELSE 0 END) AS withdrawals " +
+                    "FROM transactions WHERE LOWER(username)=? " +
+                    (!monthFilter.equals("All") ? " AND MONTHNAME(date)=? " : "") +
+                    (!yearFilter.equals("All") ? " AND YEAR(date)=? " : "") +
+                    " GROUP BY MONTH(date), MONTHNAME(date) ORDER BY MONTH(date)";
+
             PreparedStatement pst = con.prepareStatement(sql);
-            pst.setString(1, username);
+            pst.setString(1, username.toLowerCase());
+            int idx = 2;
+            if (!monthFilter.equals("All")) pst.setString(idx++, monthFilter);
+            if (!yearFilter.equals("All")) pst.setString(idx, yearFilter);
+
             ResultSet rs = pst.executeQuery();
             while (rs.next()) {
+                hasData = true;
                 String month = rs.getString("month");
-                barDataset.addValue(rs.getDouble("deposits"), "Deposits", month);
-                barDataset.addValue(rs.getDouble("withdrawals"), "Withdrawals", month);
+                double deposits = rs.getDouble("deposits");
+                double withdrawals = rs.getDouble("withdrawals");
+
+                System.out.println("Month: " + month + ", Deposits: " + deposits + ", Withdrawals: " + withdrawals);
+
+                // Bar chart
+                barDataset.addValue(deposits, "Deposits", month);
+                barDataset.addValue(withdrawals, "Withdrawals", month);
+
+                // Line chart
+                lineDataset.addValue(deposits, "Deposits", month);
+                lineDataset.addValue(withdrawals, "Withdrawals", month);
             }
-        } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error loading bar chart: " + ex.getMessage());
-        }
 
-        // Creates bar chart
-        JFreeChart barChart = ChartFactory.createBarChart("Monthly Deposit vs Withdrawal Trend", "Month", "Amount (₹)", barDataset,
-                PlotOrientation.VERTICAL, true, true, false);
-        barChart.setBackgroundPaint(new Color(8, 20, 30));
-        barChart.getPlot().setBackgroundPaint(new Color(8, 20, 30));
+            if (!hasData) {
+                JLabel noData = new JLabel("No transactions found for selected period.", SwingConstants.CENTER);
+                noData.setForeground(new Color(255, 120, 120));
+                noData.setFont(new Font("Segoe UI", Font.BOLD, 17));
+                noData.setBounds(0, 200, 800, 30);
+                analyticsPanel.add(noData);
+                return;
+            }
 
-        // Bar chart panel
-        ChartPanel barPanel = new ChartPanel(barChart);
-        barPanel.setBounds(410, 130, 360, 250);
-        barPanel.setBackground(new Color(8, 20, 30));
-        analyticsPanel.add(barPanel);
+            // Line Chart
+            JFreeChart lineChart = ChartFactory.createLineChart(
+                    "Monthly Deposit vs Withdrawal", "Month", "Amount (₹)", lineDataset,
+                    PlotOrientation.VERTICAL, true, true, false
+            );
+            lineChart.setBackgroundPaint(new Color(8, 20, 30));
+            lineChart.getTitle().setPaint(Color.WHITE);
 
-        // Info panel
-        JPanel infoPanel = new JPanel(null);
-        infoPanel.setBounds(40, 400, 730, 100);
-        infoPanel.setBackground(new Color(10, 25, 35));
-        infoPanel.setBorder(BorderFactory.createLineBorder(new Color(0, 230, 255), 1));
-        analyticsPanel.add(infoPanel);
+            org.jfree.chart.plot.CategoryPlot linePlot = lineChart.getCategoryPlot();
+            linePlot.setBackgroundPaint(new Color(8, 20, 30));
+            linePlot.setDomainGridlinePaint(new Color(80, 80, 80));
+            linePlot.setRangeGridlinePaint(new Color(80, 80, 80));
+            linePlot.getRenderer().setSeriesPaint(0, new Color(0, 230, 255));
+            linePlot.getRenderer().setSeriesPaint(1, new Color(255, 100, 100));
+            linePlot.getDomainAxis().setTickLabelPaint(new Color(200, 200, 200));
+            linePlot.getDomainAxis().setLabelPaint(Color.LIGHT_GRAY);
+            linePlot.getRangeAxis().setTickLabelPaint(new Color(200, 200, 200));
+            linePlot.getRangeAxis().setLabelPaint(Color.LIGHT_GRAY);
 
-        double totalDeposits = 0, totalWithdrawals = 0;
-        String mostActiveMonth = "-";
+            // Legend text color
+            if (lineChart.getLegend() != null) {
+                lineChart.getLegend().setBackgroundPaint(new Color(8, 20, 30));
+                lineChart.getLegend().setItemPaint(Color.WHITE);
+            }
 
-        try (Connection con = DriverManager.getConnection(url, user, password)) {
-            String totalSql = """ 
-                  SELECT SUM(CASE WHEN LOWER(type)='deposit' THEN amount ELSE 0 END) AS deposits,SUM(CASE WHEN LOWER(type)='withdrawal' THEN amount ELSE 0 END) 
-                  AS withdrawals FROM transactions WHERE username=?
-            """;
-            PreparedStatement pst = con.prepareStatement(totalSql);
-            pst.setString(1, username);
-            ResultSet rs = pst.executeQuery();
+            ChartPanel linePanel = new ChartPanel(lineChart);
+            linePanel.setBounds(40, 130, 340, 250);
+            linePanel.setBackground(new Color(8, 20, 30));
+            analyticsPanel.add(linePanel);
+
+            // Bar Chart
+            JFreeChart barChart = ChartFactory.createBarChart(
+                    "Monthly Deposit vs Withdrawal Trend", "Month", "Amount (₹)", barDataset,
+                    PlotOrientation.VERTICAL, true, true, false
+            );
+            barChart.setBackgroundPaint(new Color(8, 20, 30));
+            barChart.getTitle().setPaint(Color.WHITE);
+
+            org.jfree.chart.plot.CategoryPlot barPlot = barChart.getCategoryPlot();
+            barPlot.setBackgroundPaint(new Color(8, 20, 30));
+            barPlot.setDomainGridlinePaint(new Color(80, 80, 80));
+            barPlot.setRangeGridlinePaint(new Color(80, 80, 80));
+            barPlot.getRenderer().setSeriesPaint(0, new Color(0, 230, 255));
+            barPlot.getRenderer().setSeriesPaint(1, new Color(255, 100, 100));
+            barPlot.getDomainAxis().setTickLabelPaint(new Color(200, 200, 200));
+            barPlot.getDomainAxis().setLabelPaint(Color.LIGHT_GRAY);
+            barPlot.getRangeAxis().setTickLabelPaint(new Color(200, 200, 200));
+            barPlot.getRangeAxis().setLabelPaint(Color.LIGHT_GRAY);
+
+            if (barChart.getLegend() != null) {
+                barChart.getLegend().setBackgroundPaint(new Color(8, 20, 30));
+                barChart.getLegend().setItemPaint(Color.WHITE);
+            }
+
+            // Bar chart panel
+            ChartPanel barPanel = new ChartPanel(barChart);
+            barPanel.setBounds(410, 130, 360, 250);
+            barPanel.setBackground(new Color(8, 20, 30));
+            analyticsPanel.add(barPanel);
+
+            // Info Panel
+            JPanel infoPanel = new JPanel(null);
+            infoPanel.setBounds(40, 400, 730, 100);
+            infoPanel.setBackground(new Color(10, 25, 35));
+            infoPanel.setBorder(BorderFactory.createLineBorder(new Color(0, 230, 255), 1));
+            analyticsPanel.add(infoPanel);
+
+            double totalDeposits = 0, totalWithdrawals = 0;
+            String mostActiveMonth = "-";
+
+            String totalSql = "SELECT SUM(CASE WHEN LOWER(type)='deposit' THEN amount ELSE 0 END) AS deposits, " +
+                    "SUM(CASE WHEN LOWER(type)='withdraw' THEN amount ELSE 0 END) AS withdrawals " +
+                    "FROM transactions WHERE LOWER(username)=? " +
+                    (!monthFilter.equals("All") ? " AND MONTHNAME(date)=? " : "") +
+                    (!yearFilter.equals("All") ? " AND YEAR(date)=? " : "");
+
+            pst = con.prepareStatement(totalSql);
+            pst.setString(1, username.toLowerCase());
+            idx = 2;
+            if (!monthFilter.equals("All")) pst.setString(idx++, monthFilter);
+            if (!yearFilter.equals("All")) pst.setString(idx, yearFilter);
+
+            rs = pst.executeQuery();
             if (rs.next()) {
                 totalDeposits = rs.getDouble("deposits");
                 totalWithdrawals = rs.getDouble("withdrawals");
             }
 
-            // Most Active Month (highest total amount)
-            String monthSql = """
-                    SELECT MONTHNAME(date) AS month, SUM(amount) AS total FROM transactions WHERE username=? GROUP BY MONTH(date), MONTHNAME(date) ORDER BY total DESC LIMIT 1
-            """;
+            String monthSql = "SELECT MONTHNAME(date) AS month, SUM(amount) AS total FROM transactions " +
+                    "WHERE LOWER(username)=? " +
+                    (!monthFilter.equals("All") ? " AND MONTHNAME(date)=? " : "") +
+                    (!yearFilter.equals("All") ? " AND YEAR(date)=? " : "") +
+                    " GROUP BY MONTH(date), MONTHNAME(date) ORDER BY total DESC LIMIT 1";
 
-            PreparedStatement pst2 = con.prepareStatement(monthSql);
-            pst2.setString(1, username);
-            ResultSet rs2 = pst2.executeQuery();
-            if (rs2.next()) mostActiveMonth = rs2.getString("month");
+            pst = con.prepareStatement(monthSql);
+            pst.setString(1, username.toLowerCase());
+            idx = 2;
+            if (!monthFilter.equals("All")) pst.setString(idx++, monthFilter);
+            if (!yearFilter.equals("All")) pst.setString(idx, yearFilter);
+
+            rs = pst.executeQuery();
+            if (rs.next()) mostActiveMonth = rs.getString("month");
+
+            double netSavings = totalDeposits - totalWithdrawals;
+
+            // Total deposits label
+            JLabel totalDepositsLabel = createLabel(
+                    "💵 Total Deposits: ₹" + String.format("%.2f", totalDeposits),
+                    30, 20, 300, 25, infoPanel, 16
+            );
+            totalDepositsLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+
+            // Total withdrawals label
+            JLabel totalWithdrawalsLabel = createLabel(
+                    "💸 Total Withdrawals: ₹" + String.format("%.2f", totalWithdrawals),
+                    280, 20, 300, 25, infoPanel, 16
+            );
+            totalWithdrawalsLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+
+            // Net savings label
+            JLabel netSavingsLabel = createLabel(
+                    "📈 Net Savings: ₹" + String.format("%.2f", netSavings),
+                    540, 20, 300, 25, infoPanel, 16
+            );
+            netSavingsLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+
+            // Most active month label
+            JLabel mostActiveMonthLabel = createLabel(
+                    "📅 Most Active Month: " + mostActiveMonth,
+                    30, 55, 400, 25, infoPanel, 16
+            );
+            mostActiveMonthLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 16));
+
+            String insightText = netSavings > 0 ? "💡 You saved ₹" + String.format("%.2f", netSavings) + "! Great job managing your funds."
+                    : netSavings < 0 ? "⚠️ You spent more than you saved. Try to control withdrawals next month."
+                    : "ℹ️ Your spending and savings are balanced this month.";
+
+            // Insight label
+            JLabel insight = createLabel(
+                    insightText, 40, 510, 700, 25, analyticsPanel, 15
+            );
+            insight.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 15));
 
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "Error loading totals: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, "Error loading analytics: " + ex.getMessage());
         }
-
-        double netSavings = totalDeposits - totalWithdrawals;
-
-        // Total deposits label
-        createLabel("💵 Total Deposits: ₹" + String.format("%.2f", totalDeposits), 30, 20, 300, 25, infoPanel, 16);
-
-        // Total withdrawals label
-        createLabel("💸 Total Withdrawals: ₹" + String.format("%.2f", totalWithdrawals), 280, 20, 300, 25, infoPanel, 16);
-
-        // Net savings label
-        createLabel("📈 Net Savings: ₹" + String.format("%.2f", netSavings), 540, 20, 300, 25, infoPanel, 16);
-
-        // Most active month label
-        createLabel("📅 Most Active Month: " + mostActiveMonth, 30, 55, 400, 25, infoPanel, 16);
-
-        String insightText;
-        if (netSavings > 0) {
-            insightText = "💡 You saved ₹" + String.format("%.2f", netSavings) + "! Great job managing your funds.";
-        } else if (netSavings < 0) {
-            insightText = "⚠️ You spent more than you saved. Try to control withdrawals next month.";
-        } else {
-            insightText = "ℹ️ Your spending and savings are balanced this month.";
-        }
-
-        insightLabel = createLabel(insightText, 40, 510, 700, 25, analyticsPanel, 15);
     }
 
     public static void main(String[] args) {
-        new Analysis("User");
+        Analysis object = new Analysis("Yash24");
     }
 }
