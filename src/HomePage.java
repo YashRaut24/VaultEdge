@@ -103,7 +103,7 @@ class HomePage extends JFrame {
 
         // View analytics button
         JButton viewAnalyticsButton = createButton("View Analytics", 590, 300, 150, 42, homePagePanel);
-        viewAnalyticsButton.addActionListener(a -> new Profile(username));
+        viewAnalyticsButton.addActionListener(a -> new Analysis(username));
 
         // Creates data for pie chart
         DefaultPieDataset pieDataset = new DefaultPieDataset();
