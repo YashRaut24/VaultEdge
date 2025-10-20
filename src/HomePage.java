@@ -93,8 +93,13 @@ class HomePage extends JFrame {
         JButton transferButton = createButton("Transfer", 215, 270, 150, 42, homePagePanel);
         transferButton.addActionListener(a -> new TransferPage(username));
 
+        // VirtualCard button
+        // Change this line (line 81 in your code):
+        JButton virtualCardButton = createButton("Virtual Card", 40, 270, 150, 42, homePagePanel);
+        virtualCardButton.addActionListener(a -> new VirtualCard(username));
+
         // Passbook button
-        JButton passbookButton = createButton("Passbook", 40, 270, 150, 42, homePagePanel);
+        JButton passbookButton = createButton("Passbook", 430, 300, 150, 42, homePagePanel);
         passbookButton.addActionListener(a -> new PassbookPage(username));
 
         // Settings button
