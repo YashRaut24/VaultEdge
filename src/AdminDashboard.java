@@ -1,175 +1,101 @@
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.sql.*;
 
-class AdminDashboard extends JFrame {
+public class AdminDashboard extends JFrame {
 
-    // Creates labels
-    private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
+    // Create labels
+    private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel, int fontSize, Color color) {
         JLabel label = new JLabel(text);
-        label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        label.setForeground(new Color(200, 240, 255));
+        label.setFont(new Font("Segoe UI", Font.BOLD, fontSize));
+        label.setForeground(color);
         label.setBounds(x, y, width, height);
         panel.add(label);
         return label;
     }
 
-    // Creates TextFields
-    private JTextField createTextField(int x, int y, int width, int height, JPanel panel) {
-        JTextField field = new JTextField();
-        field.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        field.setBackground(new Color(15, 30, 40));
-        field.setForeground(new Color(220, 235, 245));
-        field.setCaretColor(new Color(0, 230, 255));
-        field.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(0, 230, 255), 1),
-                BorderFactory.createEmptyBorder(5, 10, 5, 10)
-        ));
-        field.setBounds(x, y, width, height);
-        panel.add(field);
-        return field;
-    }
-
-    // Creates buttons
-    private JButton createButton(String text, int x, int y, int width, int height, JPanel panel, Color borderColor, Color textColor, Color bgColor) {
+    // Create buttons
+    private JButton createButton(String text, int x, int y, int width, int height, JPanel panel) {
         JButton button = new JButton(text);
-        button.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        button.setForeground(textColor);
-        button.setOpaque(false);
-        button.setContentAreaFilled(false);
-        button.setBorder(BorderFactory.createLineBorder(borderColor, 2));
+        button.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        button.setForeground(Color.WHITE);
+        button.setBackground(new Color(10, 25, 40));
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setBounds(x, y, width, height);
-        if (bgColor != null) {
-            button.setBackground(bgColor);
-            button.setOpaque(true);
-        }
         panel.add(button);
         return button;
     }
 
-    AdminDashboard(String Username) {
+    public AdminDashboard(String username) {
 
-        // Database Credentials
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String password = EnvLoader.get("DB_PASSWORD");
+        // Colors
+        Color backgroundColor = new Color(8, 20, 30);
+        Color sidebarColor = new Color(10, 25, 40);
+        Color cyan = new Color(0, 230, 255);
 
-        // AdminDashboardPanel
-        JPanel adminDashboardPanel = new JPanel(null);
-        adminDashboardPanel.setBackground(new Color(8, 20, 30));
-        setContentPane(adminDashboardPanel);
+        // Top Panel
+        JPanel topPanel = new JPanel(null);
+        topPanel.setBackground(sidebarColor);
+        topPanel.setBounds(0, 0, 900, 60);
+        topPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, cyan));
+        add(topPanel);
+        // VaultEdge (left)
+        JLabel titleLeft = createLabel("VaultEdge", 25, 15, 200, 30, topPanel, 22, cyan);
 
-        // Title label
-        JLabel titleLabel = new JLabel("Welcome " + Username, SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        titleLabel.setForeground(new Color(0, 230, 255));
-        titleLabel.setBounds(0, 20, 900, 40);
-        adminDashboardPanel.add(titleLabel);
+        // Admin Dashboard (center)
+        JLabel titleCenter = new JLabel("Admin Dashboard", SwingConstants.CENTER);
+        titleCenter.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleCenter.setForeground(Color.WHITE);
+        titleCenter.setBounds(280, 15, 350, 30);
+        topPanel.add(titleCenter);
 
-        // Minimum balance label
-        createLabel("Min Balance:", 50, 80, 100, 25, adminDashboardPanel);
+        // Welcome Admin label
+        JLabel welcomeLabel = createLabel("Welcome, Admin", 720, 18, 200, 25, topPanel, 15, cyan);
 
-        // Minimum balance TestField
-        JTextField minField = createTextField(160, 80, 150, 30, adminDashboardPanel);
+        // Side panel
+        JPanel sidePanel = new JPanel(null);
+        sidePanel.setBackground(backgroundColor);
+        sidePanel.setBounds(0, 60, 200, 540);
+        sidePanel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, cyan));
+        add(sidePanel);
 
-        // Maximum balance label
-        createLabel("Max Balance:", 350, 80, 100, 25, adminDashboardPanel);
+        // Overview button
+        JButton overviewBtn = createButton("Overview", 0, 0, 199, 40, sidePanel);
 
-        // Maximum balance TextField
-        JTextField maxField = createTextField(460, 80, 150, 30, adminDashboardPanel);
+        // Users button
+        JButton usersButton = createButton("Users", 0, 40, 199, 40, sidePanel);
 
-        // Filter button
-        JButton filterButton = createButton("Filter", 650, 80, 120, 30, adminDashboardPanel,
-                new Color(0, 230, 255), Color.WHITE, new Color(0, 153, 76));
+        // TransactionButton
+        JButton transactionsButton = createButton("Transactions", 0, 80, 199, 40, sidePanel);
 
-        // Back button
-        JButton backButton = createButton("Back", 780, 500, 100, 35, adminDashboardPanel,
-                new Color(0, 230, 255), Color.WHITE, new Color(255, 51, 51));
+        // Logs button
+        JButton logsButton = createButton("Logs", 0, 120, 199, 40, sidePanel);
 
-        backButton.addActionListener(e -> {
-            new AdminLogin();
+        // Settings button
+        JButton settingsButton = createButton("Settings", 0, 160, 199, 40, sidePanel);
+
+        // Logout button
+        JButton logoutButton = createButton("Logout", 40, 450, 120, 40, sidePanel);
+
+        logoutButton.addActionListener(e -> {
             dispose();
+            new AdminLogin();
         });
 
-        // User transactions table column names
-        String[] columnNames = {"Username", "Balance", "Phone", "Email", "Gender", "WLimit"};
-
-        // Data table which stores data
-        DefaultTableModel transactionsTableModel = new DefaultTableModel(columnNames, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-
-        // Transactions which shows ui for that data
-        JTable transactionsTable = new JTable(transactionsTableModel);
-        transactionsTable.getTableHeader().setReorderingAllowed(false);
-        transactionsTable.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        transactionsTable.setRowHeight(25);
-        transactionsTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 16));
-        transactionsTable.getTableHeader().setBackground(new Color(0, 230, 255));
-        transactionsTable.getTableHeader().setForeground(Color.BLACK);
-        transactionsTable.setGridColor(new Color(50, 50, 50));
-
-        // Allows table scrolling
-        JScrollPane transactionsTableScrollPane = new JScrollPane(transactionsTable);
-        transactionsTableScrollPane.setBounds(50, 130, 830, 350);
-        adminDashboardPanel.add(transactionsTableScrollPane);
-
-        filterButton.addActionListener(a -> {
-            transactionsTableModel.setRowCount(0);
-            double min = minField.getText().isEmpty() ? 0 : Double.parseDouble(minField.getText());
-            double max = maxField.getText().isEmpty() ? Double.MAX_VALUE : Double.parseDouble(maxField.getText());
-            try (Connection con = DriverManager.getConnection(url, user, password)) {
-                String sql = "SELECT * FROM users WHERE balance BETWEEN ? AND ?";
-                try (PreparedStatement pst = con.prepareStatement(sql)) {
-                    pst.setDouble(1, min);
-                    pst.setDouble(2, max);
-                    ResultSet rs = pst.executeQuery();
-                    while (rs.next()) {
-                        transactionsTableModel.addRow(new Object[]{
-                                rs.getString("username"),
-                                rs.getDouble("balance"),
-                                rs.getString("phone"),
-                                rs.getString("email"),
-                                rs.getString("gender"),
-                                rs.getDouble("wlimit")
-                        });
-                    }
-                }
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(null, e.getMessage());
-            }
-        });
-
-        try (Connection con = DriverManager.getConnection(url, user, password)) {
-            String sql = "SELECT * FROM users";
-            try (PreparedStatement pst = con.prepareStatement(sql)) {
-                ResultSet rs = pst.executeQuery();
-                while (rs.next()) {
-                    transactionsTableModel.addRow(new Object[]{
-                            rs.getString("username"),
-                            rs.getDouble("balance"),
-                            rs.getString("phone"),
-                            rs.getString("email"),
-                            rs.getString("gender"),
-                            rs.getDouble("wlimit")
-                    });
-                }
-            }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, e.getMessage());
-        }
-
-        setTitle("VaultEdge - Admin Dashboard");
+        // Content panel
+        JPanel contentPanel = new JPanel();
+        contentPanel.setBackground(new Color(12, 25, 38));
+        contentPanel.setBounds(200, 60, 700, 540);
+        contentPanel.setLayout(null);
+        add(contentPanel);
+        
+        // Frame settings
+        setTitle("VaultEdge Admin Dashboard");
+        setVisible(true);
         setSize(900, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setVisible(true);
+        setLayout(null);
     }
 
     public static void main(String[] args) {
