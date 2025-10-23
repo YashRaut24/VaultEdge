@@ -115,6 +115,53 @@ public class AdminDashboard extends JFrame {
         return overviewPanel;
     }
 
+    // Creates users panel
+    private JPanel createUsersPanel() {
+        JPanel usersPanel = new JPanel();
+        usersPanel.setLayout(null);
+        usersPanel.setBackground(new Color(12, 25, 38));
+        Color cyan = new Color(0, 230, 255);
+
+        createLabel("User Management", 250, 20, 400, 30, usersPanel, 22, cyan);
+
+        JTextField searchField = new JTextField();
+        searchField.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        searchField.setBounds(40, 70, 300, 35);
+        usersPanel.add(searchField);
+
+        JButton searchBtn = createButton("Search", 360, 70, 100, 35, usersPanel);
+
+        // Table
+        String[] columns = {"User ID", "Name", "Email", "Type", "Balance", "Status"};
+        Object[][] data = {
+                {"101", "John Doe", "john@example.com", "Customer", "$5200", "Active"},
+                {"102", "Alice", "alice@example.com", "Customer", "$4300", "Active"},
+                {"103", "Bob", "bob@example.com", "Employee", "$7200", "Inactive"},
+                {"104", "Charlie", "charlie@example.com", "Customer", "$1100", "Active"}
+        };
+
+        JTable userTable = new JTable(new DefaultTableModel(data, columns));
+        userTable.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        userTable.setForeground(Color.WHITE);
+        userTable.setBackground(new Color(15, 30, 45));
+        userTable.setRowHeight(28);
+        userTable.getTableHeader().setBackground(cyan);
+        userTable.getTableHeader().setForeground(Color.BLACK);
+        userTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        JScrollPane scrollPane = new JScrollPane(userTable);
+        scrollPane.setBounds(40, 130, 620, 300);
+        scrollPane.setBorder(BorderFactory.createLineBorder(cyan, 1));
+        usersPanel.add(scrollPane);
+
+        // Buttons
+        JButton viewBtn = createButton("View", 120, 460, 120, 40, usersPanel);
+        JButton editBtn = createButton("Edit", 280, 460, 120, 40, usersPanel);
+        JButton deleteBtn = createButton("Delete", 440, 460, 120, 40, usersPanel);
+
+        return usersPanel;
+    }
+
     // Constructor
     public AdminDashboard(String username) {
         Color backgroundColor = new Color(8, 20, 30);
@@ -154,6 +201,7 @@ public class AdminDashboard extends JFrame {
 
         // Users button
         JButton usersButton = createButton("Users", 0, 40, 199, 40, sidePanel);
+        usersButton.addActionListener(e -> showUsersPanel());
 
         // Transactions button
         JButton transactionsButton = createButton("Transactions", 0, 80, 199, 40, sidePanel);
@@ -199,7 +247,14 @@ public class AdminDashboard extends JFrame {
         adminDashboardPanel.repaint();
     }
 
-
+    private void showUsersPanel() {
+        adminDashboardPanel.removeAll();
+        JPanel users = createUsersPanel();
+        users.setBounds(0, 0, 700, 540);
+        adminDashboardPanel.add(users);
+        adminDashboardPanel.revalidate();
+        adminDashboardPanel.repaint();
+    }
     public static void main(String[] args) {
         new AdminDashboard("Admin");
     }
