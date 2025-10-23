@@ -320,6 +320,116 @@ public class AdminDashboard extends JFrame {
         return logsPanel;
     }
 
+    // Creates settings panel
+    private JPanel createSettingsPanel() {
+
+        // Settings panel
+        JPanel settingsPanel = new JPanel();
+        settingsPanel.setLayout(null);
+        settingsPanel.setBackground(new Color(12, 25, 38));
+        Color cyan = new Color(0, 230, 255);
+
+        // Title label
+        createLabel("Settings", 250, 20, 400, 30, settingsPanel, 22, cyan);
+
+        Font labelFont = new Font("Segoe UI", Font.BOLD, 16);
+        Font inputFont = new Font("Segoe UI", Font.PLAIN, 15);
+
+        // Minimum Balance label
+        createLabel("Minimum Balance:", 50, 80, 180, 30, settingsPanel, 16, Color.WHITE);
+
+        // Minimum balance TextField
+        JTextField minimumBalanceTextField = new JTextField();
+        minimumBalanceTextField.setFont(inputFont);
+        minimumBalanceTextField.setBounds(230, 80, 200, 30);
+        settingsPanel.add(minimumBalanceTextField);
+
+        // Max Withdrawal Limit label
+        createLabel("Max Withdrawal Limit:", 50, 130, 200, 30, settingsPanel, 16, Color.WHITE);
+
+        // Maximum withdrawal limit TextField
+        JTextField maxWithdrawalTextField = new JTextField();
+        maxWithdrawalTextField.setFont(inputFont);
+        maxWithdrawalTextField.setBounds(230, 130, 200, 30);
+        settingsPanel.add(maxWithdrawalTextField);
+
+        // Add New Admin label
+        createLabel("Add New Admin", 50, 190, 200, 30, settingsPanel, 18, cyan);
+
+        // Name label
+        createLabel("Name:", 50, 230, 100, 25, settingsPanel, 15, Color.WHITE);
+
+        // Name TextField
+        JTextField adminNameField = new JTextField();
+        adminNameField.setBounds(150, 230, 200, 25);
+        adminNameField.setFont(inputFont);
+        settingsPanel.add(adminNameField);
+
+        // Email label
+        createLabel("Email:", 50, 270, 100, 25, settingsPanel, 15, Color.WHITE);
+
+        // Email TextField
+        JTextField adminEmailField = new JTextField();
+        adminEmailField.setBounds(150, 270, 200, 25);
+        adminEmailField.setFont(inputFont);
+        settingsPanel.add(adminEmailField);
+
+        // Password label
+        createLabel("Password:", 50, 310, 100, 25, settingsPanel, 15, Color.WHITE);
+
+        // Password TextField
+        JPasswordField adminPasswordField = new JPasswordField();
+        adminPasswordField.setBounds(150, 310, 200, 25);
+        adminPasswordField.setFont(inputFont);
+        settingsPanel.add(adminPasswordField);
+
+        // Apply Button
+        JButton applyButton = new JButton("Apply");
+        applyButton.setBounds(150, 370, 100, 35);
+        applyButton.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        applyButton.setForeground(Color.WHITE);
+        applyButton.setBackground(new Color(10, 25, 40));
+        applyButton.setFocusPainted(false);
+        applyButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        applyButton.setBorder(BorderFactory.createLineBorder(cyan, 2));
+        applyButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                applyButton.setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                applyButton.setBorder(BorderFactory.createLineBorder(cyan, 2));
+            }
+        });
+        applyButton.addActionListener(e -> {
+            JOptionPane.showMessageDialog(settingsPanel, "Settings Applied Successfully!");
+        });
+        settingsPanel.add(applyButton);
+
+        // Save Button
+        JButton saveButton = new JButton("Save");
+        saveButton.setBounds(270, 370, 100, 35);
+        saveButton.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        saveButton.setForeground(Color.WHITE);
+        saveButton.setBackground(new Color(10, 25, 40));
+        saveButton.setFocusPainted(false);
+        saveButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        saveButton.setBorder(BorderFactory.createLineBorder(cyan, 2));
+        saveButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                saveButton.setBorder(BorderFactory.createLineBorder(Color.WHITE, 2));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                saveButton.setBorder(BorderFactory.createLineBorder(cyan, 2));
+            }
+        });
+        saveButton.addActionListener(e -> {
+            JOptionPane.showMessageDialog(settingsPanel, "Settings Saved Successfully!");
+        });
+        settingsPanel.add(saveButton);
+
+        return settingsPanel;
+    }
+
     // Constructor
     public AdminDashboard(String username) {
         Color backgroundColor = new Color(8, 20, 30);
@@ -371,6 +481,7 @@ public class AdminDashboard extends JFrame {
 
         // Settings button
         JButton settingsButton = createButton("Settings", 0, 160, 199, 40, sidePanel);
+        settingsButton.addActionListener(e -> showSettingsPanel());
 
         // Logout button
         JButton logoutButton = createButton("Logout", 40, 450, 120, 40, sidePanel);
@@ -429,12 +540,22 @@ public class AdminDashboard extends JFrame {
 
     // Loads log panel
     private void showLogsPanel() {
-        contentPanel.removeAll();
+        adminDashboardPanel.removeAll();
         JPanel logs = createLogsPanel();
         logs.setBounds(0, 0, 700, 540);
-        contentPanel.add(logs);
-        contentPanel.revalidate();
-        contentPanel.repaint();
+        adminDashboardPanel.add(logs);
+        adminDashboardPanel.revalidate();
+        adminDashboardPanel.repaint();
+    }
+
+    // Loads settings panel
+    private void showSettingsPanel() {
+        adminDashboardPanel.removeAll();
+        JPanel settings = createSettingsPanel();
+        settings.setBounds(0, 0, 700, 540);
+        adminDashboardPanel.add(settings);
+        adminDashboardPanel.revalidate();
+        adminDashboardPanel.repaint();
     }
 
     public static void main(String[] args) {
