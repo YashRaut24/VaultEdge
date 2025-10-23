@@ -1,7 +1,14 @@
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.general.DefaultPieDataset;
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 
 public class AdminDashboard extends JFrame {
+
+    private JPanel adminDashboardPanel;
 
     // Create labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel, int fontSize, Color color) {
@@ -26,9 +33,90 @@ public class AdminDashboard extends JFrame {
         return button;
     }
 
-    public AdminDashboard(String username) {
+    // Creates overview panel
+    private JPanel createOverviewPanel() {
+
+        // Overview panel
+        JPanel overviewPanel = new JPanel();
+        overviewPanel.setLayout(null);
+        overviewPanel.setBackground(new Color(12, 25, 38));
 
         // Colors
+        Color cyan = new Color(0, 230, 255);
+        Color boxColor = new Color(10, 30, 50);
+
+        // Users panel
+        JPanel usersPanel = new JPanel(null);
+        usersPanel.setBackground(boxColor);
+        usersPanel.setBounds(40, 40, 180, 100);
+        usersPanel.setBorder(BorderFactory.createLineBorder(cyan, 2));
+        overviewPanel.add(usersPanel);
+
+        // Total users label
+        createLabel("Total Users", 35, 10, 150, 25, usersPanel, 15, Color.WHITE);
+
+        // TU Count label
+        createLabel("1024", 60, 50, 100, 25, usersPanel, 18, cyan);
+
+        // Balance label
+        JPanel balanceLabel = new JPanel(null);
+        balanceLabel.setBackground(boxColor);
+        balanceLabel.setBounds(260, 40, 180, 100);
+        balanceLabel.setBorder(BorderFactory.createLineBorder(cyan, 2));
+        overviewPanel.add(balanceLabel);
+
+        // Total balance label
+        createLabel("Total Balance", 25, 10, 150, 25, balanceLabel, 15, Color.WHITE);
+
+        // TB Count label
+        createLabel("$452,300", 40, 50, 150, 25, balanceLabel, 18, cyan);
+
+        // Transactions label
+        JPanel transactionsLabel = new JPanel(null);
+        transactionsLabel.setBackground(boxColor);
+        transactionsLabel.setBounds(480, 40, 180, 100);
+        transactionsLabel.setBorder(BorderFactory.createLineBorder(cyan, 2));
+        overviewPanel.add(transactionsLabel);
+
+        // Total transactions label
+        createLabel("Total Transactions", 10, 10, 180, 25, transactionsLabel, 15, Color.WHITE);
+
+        // TT Count
+        createLabel("8476", 60, 50, 100, 25, transactionsLabel, 18, cyan);
+
+        // Creates dataset for PieChart
+        DefaultPieDataset pieDataset = new DefaultPieDataset();
+        pieDataset.setValue("Deposits", 300000);
+        pieDataset.setValue("Withdrawals", 120000);
+        pieDataset.setValue("Transfers", 32000);
+
+        // Pie chart
+        JFreeChart pieChart = ChartFactory.createPieChart(
+                "Monthly Transactions", pieDataset, true, true, false
+        );
+
+        // Creates an object for pie chart
+        org.jfree.chart.plot.PiePlot plot = (org.jfree.chart.plot.PiePlot) pieChart.getPlot();
+        plot.setBackgroundPaint(new Color(12, 25, 38));
+        plot.setOutlineVisible(false);
+        plot.setLabelPaint(Color.WHITE);
+
+        // Chart wrapper panel
+        JPanel chartWrapperPanel = new JPanel(new BorderLayout());
+        chartWrapperPanel.setBounds(40, 180, 620, 300);
+        chartWrapperPanel.setBackground(new Color(12, 25, 38));
+
+        // Chart panel
+        ChartPanel chartPanel = new ChartPanel(pieChart);
+        chartPanel.setOpaque(false);
+        chartWrapperPanel.add(chartPanel, BorderLayout.CENTER);
+        overviewPanel.add(chartWrapperPanel);
+
+        return overviewPanel;
+    }
+
+    // Constructor
+    public AdminDashboard(String username) {
         Color backgroundColor = new Color(8, 20, 30);
         Color sidebarColor = new Color(10, 25, 40);
         Color cyan = new Color(0, 230, 255);
@@ -39,20 +127,21 @@ public class AdminDashboard extends JFrame {
         topPanel.setBounds(0, 0, 900, 60);
         topPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, cyan));
         add(topPanel);
-        // VaultEdge (left)
-        JLabel titleLeft = createLabel("VaultEdge", 25, 15, 200, 30, topPanel, 22, cyan);
 
-        // Admin Dashboard (center)
-        JLabel titleCenter = new JLabel("Admin Dashboard", SwingConstants.CENTER);
-        titleCenter.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        titleCenter.setForeground(Color.WHITE);
-        titleCenter.setBounds(280, 15, 350, 30);
-        topPanel.add(titleCenter);
+        // VaultEdge label
+        createLabel("VaultEdge", 25, 15, 200, 30, topPanel, 22, cyan);
 
-        // Welcome Admin label
-        JLabel welcomeLabel = createLabel("Welcome, Admin", 720, 18, 200, 25, topPanel, 15, cyan);
+        // Title label
+        JLabel titleLabel = new JLabel("Admin Dashboard", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setBounds(280, 15, 350, 30);
+        topPanel.add(titleLabel);
 
-        // Side panel
+        // Welcome label
+        createLabel("Welcome, Admin", 720, 18, 200, 25, topPanel, 15, cyan);
+
+        // Side Panel
         JPanel sidePanel = new JPanel(null);
         sidePanel.setBackground(backgroundColor);
         sidePanel.setBounds(0, 60, 200, 540);
@@ -60,12 +149,13 @@ public class AdminDashboard extends JFrame {
         add(sidePanel);
 
         // Overview button
-        JButton overviewBtn = createButton("Overview", 0, 0, 199, 40, sidePanel);
+        JButton overviewButton = createButton("Overview", 0, 0, 199, 40, sidePanel);
+        overviewButton.addActionListener(e -> showOverviewPanel());
 
         // Users button
         JButton usersButton = createButton("Users", 0, 40, 199, 40, sidePanel);
 
-        // TransactionButton
+        // Transactions button
         JButton transactionsButton = createButton("Transactions", 0, 80, 199, 40, sidePanel);
 
         // Logs button
@@ -82,21 +172,33 @@ public class AdminDashboard extends JFrame {
             new AdminLogin();
         });
 
-        // Content panel
-        JPanel contentPanel = new JPanel();
-        contentPanel.setBackground(new Color(12, 25, 38));
-        contentPanel.setBounds(200, 60, 700, 540);
-        contentPanel.setLayout(null);
-        add(contentPanel);
-        
-        // Frame settings
+        // Admin dashboard panel
+        adminDashboardPanel = new JPanel(null);
+        adminDashboardPanel.setBackground(new Color(12, 25, 38));
+        adminDashboardPanel.setBounds(200, 60, 700, 540);
+        add(adminDashboardPanel);
+
+        showOverviewPanel();
+
+        // Frame Settings
         setTitle("VaultEdge Admin Dashboard");
-        setVisible(true);
         setSize(900, 600);
+        setLayout(null);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setLayout(null);
+        setVisible(true);
     }
+
+    // Handles overviewPanel
+    private void showOverviewPanel() {
+        adminDashboardPanel.removeAll();
+        JPanel overview = createOverviewPanel();
+        overview.setBounds(0, 0, 700, 540);
+        adminDashboardPanel.add(overview);
+        adminDashboardPanel.revalidate();
+        adminDashboardPanel.repaint();
+    }
+
 
     public static void main(String[] args) {
         new AdminDashboard("Admin");
