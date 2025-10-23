@@ -264,6 +264,62 @@ public class AdminDashboard extends JFrame {
         panel.add(transfersLabel);
     }
 
+    // Creates logs panel
+    private JPanel createLogsPanel() {
+
+        // Logs panel
+        JPanel logsPanel = new JPanel();
+        logsPanel.setLayout(null);
+        logsPanel.setBackground(new Color(12, 25, 38));
+
+        Color cyan = new Color(0, 230, 255);
+
+        // Title label
+        createLabel("Activity Logs", 250, 20, 400, 30, logsPanel, 22, cyan);
+
+        // Column names for logs table
+        String[] columns = {"Timestamp", "Action", "Target User", "Admin", "Remarks"};
+        Object[][] data = {
+                {"2025-10-23 09:10", "Deleted User", "John Doe", "Admin", "User removed successfully"},
+                {"2025-10-23 10:30", "Updated Withdrawal Limit", "Alice", "Admin", "Limit changed to $2000"},
+                {"2025-10-23 11:00", "Login", "-", "Admin", "Admin logged in successfully"},
+                {"2025-10-23 11:45", "Edited User", "Bob", "Admin", "Updated user role to Employee"}
+        };
+
+        // Logs table
+        JTable logsTable = new JTable(new DefaultTableModel(data, columns));
+        logsTable.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        logsTable.setForeground(Color.WHITE);
+        logsTable.setBackground(new Color(15, 30, 45));
+        logsTable.setRowHeight(28);
+        logsTable.getTableHeader().setBackground(cyan);
+        logsTable.getTableHeader().setForeground(Color.BLACK);
+        logsTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        // Allows scrolling for logs table
+        JScrollPane scrollPane = new JScrollPane(logsTable);
+        scrollPane.setBounds(40, 70, 620, 370);
+        scrollPane.setBorder(BorderFactory.createLineBorder(cyan, 1));
+        logsPanel.add(scrollPane);
+
+        // Clear button
+        JButton clearButton = createButton("Clear Logs", 250, 460, 180, 40, logsPanel);
+        clearButton.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(logsPanel,
+                    "Are you sure you want to clear all logs?",
+                    "Confirm Clear Logs",
+                    JOptionPane.YES_NO_OPTION);
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                DefaultTableModel model = (DefaultTableModel) logsTable.getModel();
+                model.setRowCount(0);
+                JOptionPane.showMessageDialog(logsPanel, "All logs cleared!");
+            }
+        });
+
+        return logsPanel;
+    }
+
     // Constructor
     public AdminDashboard(String username) {
         Color backgroundColor = new Color(8, 20, 30);
@@ -311,6 +367,7 @@ public class AdminDashboard extends JFrame {
 
         // Logs button
         JButton logsButton = createButton("Logs", 0, 120, 199, 40, sidePanel);
+        logsButton.addActionListener(e -> showLogsPanel());
 
         // Settings button
         JButton settingsButton = createButton("Settings", 0, 160, 199, 40, sidePanel);
@@ -368,6 +425,16 @@ public class AdminDashboard extends JFrame {
         adminDashboardPanel.add(transactions);
         adminDashboardPanel.revalidate();
         adminDashboardPanel.repaint();
+    }
+
+    // Loads log panel
+    private void showLogsPanel() {
+        contentPanel.removeAll();
+        JPanel logs = createLogsPanel();
+        logs.setBounds(0, 0, 700, 540);
+        contentPanel.add(logs);
+        contentPanel.revalidate();
+        contentPanel.repaint();
     }
 
     public static void main(String[] args) {
