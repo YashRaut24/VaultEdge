@@ -117,21 +117,26 @@ public class AdminDashboard extends JFrame {
 
     // Creates users panel
     private JPanel createUsersPanel() {
+
+        // Users panel
         JPanel usersPanel = new JPanel();
         usersPanel.setLayout(null);
         usersPanel.setBackground(new Color(12, 25, 38));
         Color cyan = new Color(0, 230, 255);
 
+        // User label
         createLabel("User Management", 250, 20, 400, 30, usersPanel, 22, cyan);
 
-        JTextField searchField = new JTextField();
-        searchField.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        searchField.setBounds(40, 70, 300, 35);
-        usersPanel.add(searchField);
+        // Search TextField
+        JTextField searchTextField = new JTextField();
+        searchTextField.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        searchTextField.setBounds(40, 70, 300, 35);
+        usersPanel.add(searchTextField);
 
-        JButton searchBtn = createButton("Search", 360, 70, 100, 35, usersPanel);
+        // Search button
+        JButton searchButton = createButton("Search", 360, 70, 100, 35, usersPanel);
 
-        // Table
+        // Column names for users table
         String[] columns = {"User ID", "Name", "Email", "Type", "Balance", "Status"};
         Object[][] data = {
                 {"101", "John Doe", "john@example.com", "Customer", "$5200", "Active"},
@@ -140,6 +145,7 @@ public class AdminDashboard extends JFrame {
                 {"104", "Charlie", "charlie@example.com", "Customer", "$1100", "Active"}
         };
 
+        // Creates users table
         JTable userTable = new JTable(new DefaultTableModel(data, columns));
         userTable.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         userTable.setForeground(Color.WHITE);
@@ -149,38 +155,47 @@ public class AdminDashboard extends JFrame {
         userTable.getTableHeader().setForeground(Color.BLACK);
         userTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
 
+        // Allows scrolling for users table
         JScrollPane scrollPane = new JScrollPane(userTable);
         scrollPane.setBounds(40, 130, 620, 300);
         scrollPane.setBorder(BorderFactory.createLineBorder(cyan, 1));
         usersPanel.add(scrollPane);
 
-        // Buttons
-        JButton viewBtn = createButton("View", 120, 460, 120, 40, usersPanel);
-        JButton editBtn = createButton("Edit", 280, 460, 120, 40, usersPanel);
-        JButton deleteBtn = createButton("Delete", 440, 460, 120, 40, usersPanel);
+        // View button
+        JButton viewButton = createButton("View", 120, 460, 120, 40, usersPanel);
+
+        // Edit button
+        JButton editButton = createButton("Edit", 280, 460, 120, 40, usersPanel);
+
+        // Delete button
+        JButton deleteButton = createButton("Delete", 440, 460, 120, 40, usersPanel);
 
         return usersPanel;
     }
 
+    // Creates transaction panel
     private JPanel createTransactionsPanel() {
+
+        // Transactions panel
         JPanel transactionsPanel = new JPanel();
         transactionsPanel.setLayout(null);
         transactionsPanel.setBackground(new Color(12, 25, 38));
 
         Color cyan = new Color(0, 230, 255);
 
-        // Title
+        // Title label
         createLabel("Transactions Overview", 230, 20, 400, 30, transactionsPanel, 22, cyan);
 
-        // Search Bar
-        JTextField searchField = new JTextField();
-        searchField.setFont(new Font("Segoe UI", Font.PLAIN, 15));
-        searchField.setBounds(40, 70, 300, 35);
-        transactionsPanel.add(searchField);
+        // Search TextField
+        JTextField searchTextField = new JTextField();
+        searchTextField.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        searchTextField.setBounds(40, 70, 300, 35);
+        transactionsPanel.add(searchTextField);
 
+        // Search button
         JButton searchBtn = createButton("Search", 360, 70, 100, 35, transactionsPanel);
 
-        // --- Transaction Table ---
+        // Column names for transactions table
         String[] columns = {"Txn ID", "User", "Type", "Amount", "Date", "Status"};
         Object[][] data = {
                 {"T101", "John Doe", "Deposit", "$500", "2025-10-21", "Success"},
@@ -191,52 +206,57 @@ public class AdminDashboard extends JFrame {
                 {"T106", "Meena", "Withdrawal", "$450", "2025-10-23", "Success"}
         };
 
-        JTable txnTable = new JTable(new DefaultTableModel(data, columns));
-        txnTable.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        txnTable.setForeground(Color.WHITE);
-        txnTable.setBackground(new Color(15, 30, 45));
-        txnTable.setRowHeight(28);
-        txnTable.getTableHeader().setBackground(cyan);
-        txnTable.getTableHeader().setForeground(Color.BLACK);
-        txnTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+        // Transaction table
+        JTable transactionTable = new JTable(new DefaultTableModel(data, columns));
+        transactionTable.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        transactionTable.setForeground(Color.WHITE);
+        transactionTable.setBackground(new Color(15, 30, 45));
+        transactionTable.setRowHeight(28);
+        transactionTable.getTableHeader().setBackground(cyan);
+        transactionTable.getTableHeader().setForeground(Color.BLACK);
+        transactionTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
 
-        JScrollPane scrollPane = new JScrollPane(txnTable);
+        // Allows scrolling for transaction table
+        JScrollPane scrollPane = new JScrollPane(transactionTable);
         scrollPane.setBounds(40, 130, 620, 250);
         scrollPane.setBorder(BorderFactory.createLineBorder(cyan, 1));
         transactionsPanel.add(scrollPane);
 
-        int depositsCount = 60;     // fetch dynamically from DB
-        int withdrawalsCount = 25;  // fetch dynamically from DB
-        int transfersCount = 15;    // fetch dynamically from DB
+        int depositsCount = 60;
+        int withdrawalsCount = 25;
+        int transfersCount = 15;
 
         addTransactionSummaryText(transactionsPanel, 400, depositsCount, withdrawalsCount, transfersCount);
-
 
         return transactionsPanel;
     }
 
+    // Creates transaction summary
     private void addTransactionSummaryText(JPanel panel, int y, int deposits, int withdrawals, int transfers) {
         int total = deposits + withdrawals + transfers;
-        if (total == 0) total = 1; // prevent divide by zero
+        if (total == 0) total = 1;
 
         Color textColor = Color.WHITE;
         Font font = new Font("Segoe UI", Font.BOLD, 16);
 
-        int x = 40; // starting x position
-        int spacing = 20; // space between items
+        int x = 40;
+        int spacing = 20;
 
+        // Deposits label
         JLabel depositsLabel = new JLabel("Deposits: " + (deposits * 100 / total) + "%");
         depositsLabel.setForeground(textColor);
         depositsLabel.setFont(font);
         depositsLabel.setBounds(x, y, 150, 30);
         panel.add(depositsLabel);
 
+        // Withdrawals label
         JLabel withdrawalsLabel = new JLabel("Withdrawals: " + (withdrawals * 100 / total) + "%");
         withdrawalsLabel.setForeground(textColor);
         withdrawalsLabel.setFont(font);
         withdrawalsLabel.setBounds(x + 150 + spacing, y, 180, 30);
         panel.add(withdrawalsLabel);
 
+        // Transfers label
         JLabel transfersLabel = new JLabel("Transfers: " + (transfers * 100 / total) + "%");
         transfersLabel.setForeground(textColor);
         transfersLabel.setFont(font);
@@ -320,7 +340,7 @@ public class AdminDashboard extends JFrame {
         setVisible(true);
     }
 
-    // Handles overviewPanel
+    // Loads overview panel
     private void showOverviewPanel() {
         adminDashboardPanel.removeAll();
         JPanel overview = createOverviewPanel();
@@ -330,6 +350,7 @@ public class AdminDashboard extends JFrame {
         adminDashboardPanel.repaint();
     }
 
+    // Loads users panel
     private void showUsersPanel() {
         adminDashboardPanel.removeAll();
         JPanel users = createUsersPanel();
@@ -339,6 +360,7 @@ public class AdminDashboard extends JFrame {
         adminDashboardPanel.repaint();
     }
 
+    // Loads transaction panel
     private void showTransactionsPanel() {
         adminDashboardPanel.removeAll();
         JPanel transactions = createTransactionsPanel();
