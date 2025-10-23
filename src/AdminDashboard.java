@@ -162,6 +162,88 @@ public class AdminDashboard extends JFrame {
         return usersPanel;
     }
 
+    private JPanel createTransactionsPanel() {
+        JPanel transactionsPanel = new JPanel();
+        transactionsPanel.setLayout(null);
+        transactionsPanel.setBackground(new Color(12, 25, 38));
+
+        Color cyan = new Color(0, 230, 255);
+
+        // Title
+        createLabel("Transactions Overview", 230, 20, 400, 30, transactionsPanel, 22, cyan);
+
+        // Search Bar
+        JTextField searchField = new JTextField();
+        searchField.setFont(new Font("Segoe UI", Font.PLAIN, 15));
+        searchField.setBounds(40, 70, 300, 35);
+        transactionsPanel.add(searchField);
+
+        JButton searchBtn = createButton("Search", 360, 70, 100, 35, transactionsPanel);
+
+        // --- Transaction Table ---
+        String[] columns = {"Txn ID", "User", "Type", "Amount", "Date", "Status"};
+        Object[][] data = {
+                {"T101", "John Doe", "Deposit", "$500", "2025-10-21", "Success"},
+                {"T102", "Alice", "Withdrawal", "$300", "2025-10-21", "Success"},
+                {"T103", "Bob", "Transfer", "$150", "2025-10-22", "Pending"},
+                {"T104", "Charlie", "Deposit", "$800", "2025-10-22", "Failed"},
+                {"T105", "Yash", "Transfer", "$1200", "2025-10-22", "Success"},
+                {"T106", "Meena", "Withdrawal", "$450", "2025-10-23", "Success"}
+        };
+
+        JTable txnTable = new JTable(new DefaultTableModel(data, columns));
+        txnTable.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txnTable.setForeground(Color.WHITE);
+        txnTable.setBackground(new Color(15, 30, 45));
+        txnTable.setRowHeight(28);
+        txnTable.getTableHeader().setBackground(cyan);
+        txnTable.getTableHeader().setForeground(Color.BLACK);
+        txnTable.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
+
+        JScrollPane scrollPane = new JScrollPane(txnTable);
+        scrollPane.setBounds(40, 130, 620, 250);
+        scrollPane.setBorder(BorderFactory.createLineBorder(cyan, 1));
+        transactionsPanel.add(scrollPane);
+
+        int depositsCount = 60;     // fetch dynamically from DB
+        int withdrawalsCount = 25;  // fetch dynamically from DB
+        int transfersCount = 15;    // fetch dynamically from DB
+
+        addTransactionSummaryText(transactionsPanel, 400, depositsCount, withdrawalsCount, transfersCount);
+
+
+        return transactionsPanel;
+    }
+
+    private void addTransactionSummaryText(JPanel panel, int y, int deposits, int withdrawals, int transfers) {
+        int total = deposits + withdrawals + transfers;
+        if (total == 0) total = 1; // prevent divide by zero
+
+        Color textColor = Color.WHITE;
+        Font font = new Font("Segoe UI", Font.BOLD, 16);
+
+        int x = 40; // starting x position
+        int spacing = 20; // space between items
+
+        JLabel depositsLabel = new JLabel("Deposits: " + (deposits * 100 / total) + "%");
+        depositsLabel.setForeground(textColor);
+        depositsLabel.setFont(font);
+        depositsLabel.setBounds(x, y, 150, 30);
+        panel.add(depositsLabel);
+
+        JLabel withdrawalsLabel = new JLabel("Withdrawals: " + (withdrawals * 100 / total) + "%");
+        withdrawalsLabel.setForeground(textColor);
+        withdrawalsLabel.setFont(font);
+        withdrawalsLabel.setBounds(x + 150 + spacing, y, 180, 30);
+        panel.add(withdrawalsLabel);
+
+        JLabel transfersLabel = new JLabel("Transfers: " + (transfers * 100 / total) + "%");
+        transfersLabel.setForeground(textColor);
+        transfersLabel.setFont(font);
+        transfersLabel.setBounds(x + 150 + spacing + 180 + spacing, y, 150, 30);
+        panel.add(transfersLabel);
+    }
+
     // Constructor
     public AdminDashboard(String username) {
         Color backgroundColor = new Color(8, 20, 30);
@@ -205,6 +287,7 @@ public class AdminDashboard extends JFrame {
 
         // Transactions button
         JButton transactionsButton = createButton("Transactions", 0, 80, 199, 40, sidePanel);
+        transactionsButton.addActionListener(e -> showTransactionsPanel());
 
         // Logs button
         JButton logsButton = createButton("Logs", 0, 120, 199, 40, sidePanel);
@@ -255,6 +338,16 @@ public class AdminDashboard extends JFrame {
         adminDashboardPanel.revalidate();
         adminDashboardPanel.repaint();
     }
+
+    private void showTransactionsPanel() {
+        adminDashboardPanel.removeAll();
+        JPanel transactions = createTransactionsPanel();
+        transactions.setBounds(0, 0, 700, 540);
+        adminDashboardPanel.add(transactions);
+        adminDashboardPanel.revalidate();
+        adminDashboardPanel.repaint();
+    }
+
     public static void main(String[] args) {
         new AdminDashboard("Admin");
     }
