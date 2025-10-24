@@ -5,8 +5,16 @@ import org.jfree.data.general.DefaultPieDataset;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.*;
 
 public class AdminDashboard extends JFrame {
+
+    // Database credentials
+    String url = EnvLoader.get("DB_URL");
+    String user = EnvLoader.get("DB_USER");
+    String password = EnvLoader.get("DB_PASSWORD");
 
     private JPanel adminDashboardPanel;
 
@@ -55,9 +63,6 @@ public class AdminDashboard extends JFrame {
         // Total users label
         createLabel("Total Users", 35, 10, 150, 25, usersPanel, 15, Color.WHITE);
 
-        // TU Count label
-        createLabel("1024", 60, 50, 100, 25, usersPanel, 18, cyan);
-
         // Balance label
         JPanel balanceLabel = new JPanel(null);
         balanceLabel.setBackground(boxColor);
@@ -67,9 +72,6 @@ public class AdminDashboard extends JFrame {
 
         // Total balance label
         createLabel("Total Balance", 25, 10, 150, 25, balanceLabel, 15, Color.WHITE);
-
-        // TB Count label
-        createLabel("$452,300", 40, 50, 150, 25, balanceLabel, 18, cyan);
 
         // Transactions label
         JPanel transactionsLabel = new JPanel(null);
@@ -81,14 +83,75 @@ public class AdminDashboard extends JFrame {
         // Total transactions label
         createLabel("Total Transactions", 10, 10, 180, 25, transactionsLabel, 15, Color.WHITE);
 
-        // TT Count
-        createLabel("8476", 60, 50, 100, 25, transactionsLabel, 18, cyan);
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+
+            String totalUserSql = "SELECT COUNT(DISTINCT username) AS totalUsers FROM transactions";
+            try (PreparedStatement pst = conn.prepareStatement(totalUserSql);
+                 ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+
+                    // TU Count label
+                    createLabel(rs.getString("totalUsers"), 60, 50, 100, 25, usersPanel, 18, cyan);
+                }
+            }
+
+            String totalTransactionsSql = "SELECT COUNT(*) AS totalTransactions FROM transactions";
+            try (PreparedStatement pst = conn.prepareStatement(totalTransactionsSql);
+                 ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+
+                    // TT Count
+                    createLabel(rs.getString("totalTransactions"), 60, 50, 100, 25, transactionsLabel, 18, cyan);
+                }
+            }
+
+            // Total balance
+            String totalBalanceSql =
+                    "SELECT SUM(balance_after) AS totalBalance FROM (" +
+                            "SELECT username, MAX(balance_after) AS balance_after " +
+                            "FROM transactions GROUP BY username) AS userBalances";
+            try (PreparedStatement pst = conn.prepareStatement(totalBalanceSql);
+                 ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+
+                    // TB Count label
+                    createLabel("₹"+rs.getString("totalBalance"), 40, 50, 150, 25, balanceLabel, 18, cyan);
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
         // Creates dataset for PieChart
         DefaultPieDataset pieDataset = new DefaultPieDataset();
-        pieDataset.setValue("Deposits", 300000);
-        pieDataset.setValue("Withdrawals", 120000);
-        pieDataset.setValue("Transfers", 32000);
+
+        try (Connection con = DriverManager.getConnection(url, user, password)) {
+            String totalSql = "SELECT SUM(total_deposits) AS total_deposits, " +
+                    "SUM(total_withdrawals) AS total_withdrawals, " +
+                    "SUM(total_transfers) AS total_transfers " +
+                    "FROM transaction_summary";
+
+            try (PreparedStatement pst = con.prepareStatement(totalSql);
+                 ResultSet rs = pst.executeQuery()) {
+
+                if (rs.next()) {
+                    double deposits = rs.getDouble("total_deposits");
+                    double withdrawals = rs.getDouble("total_withdrawals");
+                    double transfers = rs.getDouble("total_transfers");
+
+                    pieDataset.setValue("Deposits", deposits);
+                    pieDataset.setValue("Withdrawals", withdrawals);
+                    pieDataset.setValue("Transfers", transfers);
+                } else {
+                    pieDataset.setValue("Deposits", 0);
+                    pieDataset.setValue("Withdrawals", 0);
+                    pieDataset.setValue("Transfers", 0);
+                }
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Error fetching overall summary: " + e.getMessage());
+        }
 
         // Pie chart
         JFreeChart pieChart = ChartFactory.createPieChart(
@@ -432,6 +495,7 @@ public class AdminDashboard extends JFrame {
 
     // Constructor
     public AdminDashboard(String username) {
+
         Color backgroundColor = new Color(8, 20, 30);
         Color sidebarColor = new Color(10, 25, 40);
         Color cyan = new Color(0, 230, 255);
