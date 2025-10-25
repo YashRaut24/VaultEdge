@@ -8,6 +8,7 @@ import java.awt.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 
 public class AdminDashboard extends JFrame {
 
@@ -180,7 +181,6 @@ public class AdminDashboard extends JFrame {
 
     // Creates users panel
     private JPanel createUsersPanel() {
-
         // Users panel
         JPanel usersPanel = new JPanel();
         usersPanel.setLayout(null);
@@ -201,12 +201,40 @@ public class AdminDashboard extends JFrame {
 
         // Column names for users table
         String[] columns = {"User ID", "Name", "Email", "Type", "Balance", "Status"};
-        Object[][] data = {
-                {"101", "John Doe", "john@example.com", "Customer", "$5200", "Active"},
-                {"102", "Alice", "alice@example.com", "Customer", "$4300", "Active"},
-                {"103", "Bob", "bob@example.com", "Employee", "$7200", "Inactive"},
-                {"104", "Charlie", "charlie@example.com", "Customer", "$1100", "Active"}
-        };
+
+        // Table data
+        Object[][] data = new Object[0][];
+
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            String sql = "SELECT id, fullname, email, account_type, balance, " +
+                    "CASE WHEN balance > 0 THEN 'Active' ELSE 'Inactive' END AS status " +
+                    "FROM users";
+
+            // Create scrollable ResultSet
+            try (PreparedStatement pst = conn.prepareStatement(sql,
+                    ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
+                 ResultSet rs = pst.executeQuery()) {
+
+                rs.last();
+                int rowCount = rs.getRow();
+                rs.beforeFirst();
+
+                data = new Object[rowCount][6];
+                int i = 0;
+                while (rs.next()) {
+                    data[i][0] = rs.getInt("id");
+                    data[i][1] = rs.getString("fullname");
+                    data[i][2] = rs.getString("email");
+                    data[i][3] = rs.getString("account_type");
+                    data[i][4] = "₹" + rs.getDouble("balance");
+                    data[i][5] = rs.getString("status");
+                    i++;
+                }
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(null, "Error fetching users: " + ex.getMessage());
+        }
 
         // Creates users table
         JTable userTable = new JTable(new DefaultTableModel(data, columns));
@@ -260,14 +288,66 @@ public class AdminDashboard extends JFrame {
 
         // Column names for transactions table
         String[] columns = {"Txn ID", "User", "Type", "Amount", "Date", "Status"};
-        Object[][] data = {
-                {"T101", "John Doe", "Deposit", "$500", "2025-10-21", "Success"},
-                {"T102", "Alice", "Withdrawal", "$300", "2025-10-21", "Success"},
-                {"T103", "Bob", "Transfer", "$150", "2025-10-22", "Pending"},
-                {"T104", "Charlie", "Deposit", "$800", "2025-10-22", "Failed"},
-                {"T105", "Yash", "Transfer", "$1200", "2025-10-22", "Success"},
-                {"T106", "Meena", "Withdrawal", "$450", "2025-10-23", "Success"}
-        };
+        Object[][] data = new Object[0][];
+
+        int depositsCount = 0;
+        int withdrawalsCount = 0;
+        int transfersCount = 0;
+
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            String sql = "SELECT id, username, type, amount, date, " +
+                    "CASE " +
+                    "  WHEN amount > 0 THEN 'Success' " +
+                    "  ELSE 'Failed' " +
+                    "END AS status " +
+                    "FROM transactions ORDER BY date DESC";
+
+            try (PreparedStatement pst = conn.prepareStatement(sql,
+                    ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
+                 ResultSet rs = pst.executeQuery()) {
+
+                rs.last();
+                int rowCount = rs.getRow();
+                rs.beforeFirst();
+
+                data = new Object[rowCount][6];
+                int i = 0;
+                while (rs.next()) {
+                    data[i][0] = "T" + rs.getInt("id");
+                    data[i][1] = rs.getString("username");
+                    String type = rs.getString("type");
+                    data[i][2] = type.substring(0, 1).toUpperCase() + type.substring(1).toLowerCase();
+                    data[i][3] = "₹" + rs.getDouble("amount");
+
+                    // Format date
+                    Timestamp timestamp = rs.getTimestamp("date");
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                    data[i][4] = sdf.format(timestamp);
+
+                    data[i][5] = rs.getString("status");
+                    i++;
+                }
+            }
+
+            String countSql = "SELECT " +
+                    "SUM(CASE WHEN LOWER(type)='deposit' THEN 1 ELSE 0 END) AS deposits, " +
+                    "SUM(CASE WHEN LOWER(type)='withdraw' THEN 1 ELSE 0 END) AS withdrawals, " +
+                    "SUM(CASE WHEN LOWER(type)='transfer' THEN 1 ELSE 0 END) AS transfers " +
+                    "FROM transactions";
+
+            try (PreparedStatement pst = conn.prepareStatement(countSql);
+                 ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    depositsCount = rs.getInt("deposits");
+                    withdrawalsCount = rs.getInt("withdrawals");
+                    transfersCount = rs.getInt("transfers");
+                }
+            }
+
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(null, "Error fetching transactions: " + ex.getMessage());
+        }
 
         // Transaction table
         JTable transactionTable = new JTable(new DefaultTableModel(data, columns));
@@ -285,15 +365,10 @@ public class AdminDashboard extends JFrame {
         scrollPane.setBorder(BorderFactory.createLineBorder(cyan, 1));
         transactionsPanel.add(scrollPane);
 
-        int depositsCount = 60;
-        int withdrawalsCount = 25;
-        int transfersCount = 15;
-
         addTransactionSummaryText(transactionsPanel, 400, depositsCount, withdrawalsCount, transfersCount);
 
         return transactionsPanel;
     }
-
     // Creates transaction summary
     private void addTransactionSummaryText(JPanel panel, int y, int deposits, int withdrawals, int transfers) {
         int total = deposits + withdrawals + transfers;
