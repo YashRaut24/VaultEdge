@@ -273,11 +273,8 @@ class Analysis extends JFrame {
             double totalDeposits = 0, totalWithdrawals = 0;
             String mostActiveMonth = "-";
 
-            String totalSql = "SELECT SUM(CASE WHEN LOWER(type)='deposit' THEN amount ELSE 0 END) AS deposits, " +
-                    "SUM(CASE WHEN LOWER(type)='withdraw' THEN amount ELSE 0 END) AS withdrawals " +
-                    "FROM transactions WHERE LOWER(username)=? " +
-                    (!monthFilter.equals("All") ? " AND MONTHNAME(date)=? " : "") +
-                    (!yearFilter.equals("All") ? " AND YEAR(date)=? " : "");
+            String totalSql = "SELECT total_deposits, total_withdrawals " +
+                    "FROM transaction_summary WHERE LOWER(username)=?";
 
             pst = con.prepareStatement(totalSql);
             pst.setString(1, username.toLowerCase());
@@ -287,8 +284,8 @@ class Analysis extends JFrame {
 
             rs = pst.executeQuery();
             if (rs.next()) {
-                totalDeposits = rs.getDouble("deposits");
-                totalWithdrawals = rs.getDouble("withdrawals");
+                totalDeposits = rs.getDouble("total_deposits");
+                totalWithdrawals = rs.getDouble("total_withdrawals");
             }
 
             String monthSql = "SELECT MONTHNAME(date) AS month, SUM(amount) AS total FROM transactions " +
