@@ -5,6 +5,27 @@ import java.sql.*;
 
 class NewloginPage extends JFrame {
 
+    // Database credentials
+    String url = EnvLoader.get("DB_URL");
+    String user = EnvLoader.get("DB_USER");
+    String passwords = EnvLoader.get("DB_PASSWORD");
+
+    // Updates activities
+    private void logActivity(String action, String targetUser, String adminUsername, String remarks) {
+        try (Connection conn = DriverManager.getConnection(url, user, passwords)) {
+            String sql = "INSERT INTO activities (action, target_user, admin, remarks) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement pst = conn.prepareStatement(sql)) {
+                pst.setString(1, action);
+                pst.setString(2, targetUser);
+                pst.setString(3, adminUsername);
+                pst.setString(4, remarks);
+                pst.executeUpdate();
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error logging activity: " + ex.getMessage());
+        }
+    }
+
     // Create labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
         JLabel label = new JLabel(text);
@@ -85,11 +106,6 @@ class NewloginPage extends JFrame {
     }
 
     NewloginPage() {
-
-        // DB Credentials
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String passwords = EnvLoader.get("DB_PASSWORD");
 
         // New login page panel
         JPanel newLoginPagePanel = new JPanel(null);
@@ -197,23 +213,49 @@ class NewloginPage extends JFrame {
 
             if (fullname.isEmpty() || dob.isEmpty() || address.isEmpty() || username.isEmpty() ||
                     password.isEmpty() || email.isEmpty() || phone.isEmpty() || depositText.isEmpty()) {
+
+                logActivity("Registration Failed", username.isEmpty() ? "Unknown" : username, "System",
+                        "Incomplete form submission - missing required fields");
+
                 JOptionPane.showMessageDialog(null, "Please fill all fields!");
                 return;
             }
 
             if (!password.equals(confirm)) {
+                logActivity("Registration Failed", username, "System",
+                        "Password mismatch during registration");
+
                 JOptionPane.showMessageDialog(null, "Passwords do not match!");
                 return;
             }
 
             try {
                 double deposit = Double.parseDouble(depositText);
+
                 if (deposit < 0) {
+                    logActivity("Registration Failed", username, "System",
+                            "Negative deposit amount entered: " + depositText);
+
                     JOptionPane.showMessageDialog(null, "Deposit amount cannot be negative!");
                     return;
                 }
 
                 try (Connection con = DriverManager.getConnection(url, user, passwords)) {
+
+                    String checkUserSql = "SELECT COUNT(*) FROM users WHERE username=?";
+                    try (PreparedStatement checkPst = con.prepareStatement(checkUserSql)) {
+                        checkPst.setString(1, username);
+                        ResultSet rs = checkPst.executeQuery();
+                        if (rs.next() && rs.getInt(1) > 0) {
+                            logActivity("Registration Failed", username, "System",
+                                    "Username already exists");
+
+                            JOptionPane.showMessageDialog(null, "Username already exists! Please choose another.");
+                            return;
+                        }
+                    }
+
+                    // Insert new user
                     String sql = "INSERT INTO users(fullname, dob, address, username, password, email, phone, gender, account_type, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                     PreparedStatement pst = con.prepareStatement(sql);
                     pst.setString(1, fullname);
@@ -228,13 +270,32 @@ class NewloginPage extends JFrame {
                     pst.setDouble(10, deposit);
 
                     pst.executeUpdate();
+
+                    String logDetails = "New account created. Name: " + fullname +
+                            ", Email: " + email + ", Account Type: " + accountType +
+                            ", Initial Deposit: ₹" + String.format("%.2f", deposit);
+                    logActivity("New User Registration", username, "System", logDetails);
+
                     JOptionPane.showMessageDialog(null, "Signup Successful! Welcome to VaultEdge.");
-                    new NewloginPage();
+                    new ExistingLoginPage();
                     dispose();
+
+                } catch (SQLException sqlEx) {
+                    logActivity("Registration Error", username, "System",
+                            "Database error: " + sqlEx.getMessage());
+
+                    JOptionPane.showMessageDialog(null, "Database Error: " + sqlEx.getMessage());
                 }
+
             } catch (NumberFormatException e) {
+                logActivity("Registration Failed", username, "System",
+                        "Invalid deposit format entered: " + depositText);
+
                 JOptionPane.showMessageDialog(null, "Invalid deposit amount!");
             } catch (Exception e) {
+                logActivity("Registration Error", username, "System",
+                        "Unexpected error: " + e.getMessage());
+
                 JOptionPane.showMessageDialog(null, "Error: " + e.getMessage());
             }
         });
