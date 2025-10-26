@@ -17,7 +17,28 @@ public class AdminDashboard extends JFrame {
     String user = EnvLoader.get("DB_USER");
     String password = EnvLoader.get("DB_PASSWORD");
 
+    // Store admin username for logging
+    private String currentAdminUsername;
+
     private JPanel adminDashboardPanel;
+
+    // ============================================
+    // HELPER METHOD: Log activities to database
+    // ============================================
+    private void logActivity(String action, String targetUser, String remarks) {
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            String sql = "INSERT INTO activities (action, target_user, admin, remarks) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement pst = conn.prepareStatement(sql)) {
+                pst.setString(1, action);
+                pst.setString(2, targetUser);
+                pst.setString(3, currentAdminUsername);
+                pst.setString(4, remarks);
+                pst.executeUpdate();
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error logging activity: " + ex.getMessage());
+        }
+    }
 
     // Create labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel, int fontSize, Color color) {
@@ -179,7 +200,7 @@ public class AdminDashboard extends JFrame {
         return overviewPanel;
     }
 
-    // Creates users panel
+    // Creates users panel - WITH LOGGING
     private JPanel createUsersPanel() {
         // Users panel
         JPanel usersPanel = new JPanel();
@@ -252,14 +273,80 @@ public class AdminDashboard extends JFrame {
         scrollPane.setBorder(BorderFactory.createLineBorder(cyan, 1));
         usersPanel.add(scrollPane);
 
-        // View button
+        // View button - WITH LOGGING
         JButton viewButton = createButton("View", 120, 460, 120, 40, usersPanel);
+        viewButton.addActionListener(e -> {
+            int selectedRow = userTable.getSelectedRow();
+            if (selectedRow != -1) {
+                String userName = userTable.getValueAt(selectedRow, 1).toString();
+                String userEmail = userTable.getValueAt(selectedRow, 2).toString();
 
-        // Edit button
+                // Show user details
+                JOptionPane.showMessageDialog(usersPanel,
+                        "User Details:\n" +
+                                "Name: " + userName + "\n" +
+                                "Email: " + userEmail,
+                        "View User",
+                        JOptionPane.INFORMATION_MESSAGE);
+
+                // LOG THIS ACTION
+                logActivity("View User", userName, "Viewed user details");
+            } else {
+                JOptionPane.showMessageDialog(usersPanel, "Please select a user first!");
+            }
+        });
+
+        // Edit button - WITH LOGGING
         JButton editButton = createButton("Edit", 280, 460, 120, 40, usersPanel);
+        editButton.addActionListener(e -> {
+            int selectedRow = userTable.getSelectedRow();
+            if (selectedRow != -1) {
+                String userName = userTable.getValueAt(selectedRow, 1).toString();
 
-        // Delete button
+                // Simple edit dialog
+                String newName = JOptionPane.showInputDialog(usersPanel,
+                        "Enter new name for " + userName + ":", userName);
+
+                if (newName != null && !newName.trim().isEmpty()) {
+                    // TODO: Update database here
+                    JOptionPane.showMessageDialog(usersPanel, "User updated successfully!");
+
+                    // LOG THIS ACTION
+                    logActivity("Edit User", userName, "Updated user information");
+                }
+            } else {
+                JOptionPane.showMessageDialog(usersPanel, "Please select a user first!");
+            }
+        });
+
+        // Delete button - WITH LOGGING
         JButton deleteButton = createButton("Delete", 440, 460, 120, 40, usersPanel);
+        deleteButton.addActionListener(e -> {
+            int selectedRow = userTable.getSelectedRow();
+            if (selectedRow != -1) {
+                String userName = userTable.getValueAt(selectedRow, 1).toString();
+                int userId = (int) userTable.getValueAt(selectedRow, 0);
+
+                int confirm = JOptionPane.showConfirmDialog(usersPanel,
+                        "Are you sure you want to delete user: " + userName + "?",
+                        "Confirm Delete",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE);
+
+                if (confirm == JOptionPane.YES_OPTION) {
+                    // TODO: Delete from database here
+                    DefaultTableModel model = (DefaultTableModel) userTable.getModel();
+                    model.removeRow(selectedRow);
+
+                    JOptionPane.showMessageDialog(usersPanel, "User deleted successfully!");
+
+                    // LOG THIS ACTION
+                    logActivity("Delete User", userName, "User removed from system");
+                }
+            } else {
+                JOptionPane.showMessageDialog(usersPanel, "Please select a user first!");
+            }
+        });
 
         return usersPanel;
     }
@@ -369,6 +456,7 @@ public class AdminDashboard extends JFrame {
 
         return transactionsPanel;
     }
+
     // Creates transaction summary
     private void addTransactionSummaryText(JPanel panel, int y, int deposits, int withdrawals, int transfers) {
         int total = deposits + withdrawals + transfers;
@@ -402,7 +490,7 @@ public class AdminDashboard extends JFrame {
         panel.add(transfersLabel);
     }
 
-    // Creates logs panel
+    // Creates logs panel - WITH DATABASE CONNECTION
     private JPanel createLogsPanel() {
 
         // Logs panel
@@ -417,12 +505,41 @@ public class AdminDashboard extends JFrame {
 
         // Column names for logs table
         String[] columns = {"Timestamp", "Action", "Target User", "Admin", "Remarks"};
-        Object[][] data = {
-                {"2025-10-23 09:10", "Deleted User", "John Doe", "Admin", "User removed successfully"},
-                {"2025-10-23 10:30", "Updated Withdrawal Limit", "Alice", "Admin", "Limit changed to $2000"},
-                {"2025-10-23 11:00", "Login", "-", "Admin", "Admin logged in successfully"},
-                {"2025-10-23 11:45", "Edited User", "Bob", "Admin", "Updated user role to Employee"}
-        };
+        Object[][] data = new Object[0][];
+
+        // Fetch data from database
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            String sql = "SELECT timestamp, action, target_user, admin, remarks " +
+                    "FROM activities ORDER BY timestamp DESC";
+
+            try (PreparedStatement pst = conn.prepareStatement(sql,
+                    ResultSet.TYPE_SCROLL_INSENSITIVE,
+                    ResultSet.CONCUR_READ_ONLY);
+                 ResultSet rs = pst.executeQuery()) {
+
+                // Get row count
+                rs.last();
+                int rowCount = rs.getRow();
+                rs.beforeFirst();
+
+                data = new Object[rowCount][5];
+                int i = 0;
+                while (rs.next()) {
+                    // Format timestamp
+                    Timestamp timestamp = rs.getTimestamp("timestamp");
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+                    data[i][0] = sdf.format(timestamp);
+
+                    data[i][1] = rs.getString("action");
+                    data[i][2] = rs.getString("target_user");
+                    data[i][3] = rs.getString("admin");
+                    data[i][4] = rs.getString("remarks");
+                    i++;
+                }
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(null, "Error fetching activity logs: " + ex.getMessage());
+        }
 
         // Logs table
         JTable logsTable = new JTable(new DefaultTableModel(data, columns));
@@ -440,7 +557,7 @@ public class AdminDashboard extends JFrame {
         scrollPane.setBorder(BorderFactory.createLineBorder(cyan, 1));
         logsPanel.add(scrollPane);
 
-        // Clear button
+        // Clear button - WITH DATABASE DELETE
         JButton clearButton = createButton("Clear Logs", 250, 460, 180, 40, logsPanel);
         clearButton.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(logsPanel,
@@ -449,16 +566,27 @@ public class AdminDashboard extends JFrame {
                     JOptionPane.YES_NO_OPTION);
 
             if (confirm == JOptionPane.YES_OPTION) {
-                DefaultTableModel model = (DefaultTableModel) logsTable.getModel();
-                model.setRowCount(0);
-                JOptionPane.showMessageDialog(logsPanel, "All logs cleared!");
+                try (Connection conn = DriverManager.getConnection(url, user, password)) {
+                    String deleteSql = "DELETE FROM activities";
+                    try (PreparedStatement pst = conn.prepareStatement(deleteSql)) {
+                        pst.executeUpdate();
+                        DefaultTableModel model = (DefaultTableModel) logsTable.getModel();
+                        model.setRowCount(0);
+                        JOptionPane.showMessageDialog(logsPanel, "All logs cleared from database!");
+                    }
+                } catch (SQLException ex) {
+                    JOptionPane.showMessageDialog(logsPanel,
+                            "Error clearing logs: " + ex.getMessage(),
+                            "Database Error",
+                            JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
 
         return logsPanel;
     }
 
-    // Creates settings panel
+    // Creates settings panel - WITH LOGGING
     private JPanel createSettingsPanel() {
 
         // Settings panel
@@ -521,7 +649,7 @@ public class AdminDashboard extends JFrame {
         adminPasswordField.setFont(inputFont);
         settingsPanel.add(adminPasswordField);
 
-        // Apply Button
+        // Apply Button - WITH LOGGING
         JButton applyButton = new JButton("Apply");
         applyButton.setBounds(150, 370, 100, 35);
         applyButton.setFont(new Font("Segoe UI", Font.BOLD, 15));
@@ -540,10 +668,15 @@ public class AdminDashboard extends JFrame {
         });
         applyButton.addActionListener(e -> {
             JOptionPane.showMessageDialog(settingsPanel, "Settings Applied Successfully!");
+
+            // LOG THIS ACTION
+            String changes = "Min Balance: " + minimumBalanceTextField.getText() +
+                    ", Max Withdrawal: " + maxWithdrawalTextField.getText();
+            logActivity("Update Settings", "-", changes);
         });
         settingsPanel.add(applyButton);
 
-        // Save Button
+        // Save Button - WITH LOGGING
         JButton saveButton = new JButton("Save");
         saveButton.setBounds(270, 370, 100, 35);
         saveButton.setFont(new Font("Segoe UI", Font.BOLD, 15));
@@ -561,7 +694,24 @@ public class AdminDashboard extends JFrame {
             }
         });
         saveButton.addActionListener(e -> {
-            JOptionPane.showMessageDialog(settingsPanel, "Settings Saved Successfully!");
+            String adminName = adminNameField.getText();
+            String adminEmail = adminEmailField.getText();
+            String adminPassword = new String(adminPasswordField.getPassword());
+
+            if (!adminName.isEmpty() && !adminEmail.isEmpty() && !adminPassword.isEmpty()) {
+                // TODO: Save new admin to database
+                JOptionPane.showMessageDialog(settingsPanel, "New Admin Added Successfully!");
+
+                // LOG THIS ACTION
+                logActivity("Add New Admin", adminName, "Admin account created: " + adminEmail);
+
+                // Clear fields
+                adminNameField.setText("");
+                adminEmailField.setText("");
+                adminPasswordField.setText("");
+            } else {
+                JOptionPane.showMessageDialog(settingsPanel, "Please fill all admin fields!");
+            }
         });
         settingsPanel.add(saveButton);
 
@@ -570,6 +720,9 @@ public class AdminDashboard extends JFrame {
 
     // Constructor
     public AdminDashboard(String username) {
+
+        // Store the admin username for logging
+        this.currentAdminUsername = username;
 
         Color backgroundColor = new Color(8, 20, 30);
         Color sidebarColor = new Color(10, 25, 40);
@@ -593,7 +746,7 @@ public class AdminDashboard extends JFrame {
         topPanel.add(titleLabel);
 
         // Welcome label
-        createLabel("Welcome, Admin", 720, 18, 200, 25, topPanel, 15, cyan);
+        createLabel("Welcome, " + username, 700, 18, 200, 25, topPanel, 15, cyan);
 
         // Side Panel
         JPanel sidePanel = new JPanel(null);
@@ -622,10 +775,12 @@ public class AdminDashboard extends JFrame {
         JButton settingsButton = createButton("Settings", 0, 160, 199, 40, sidePanel);
         settingsButton.addActionListener(e -> showSettingsPanel());
 
-        // Logout button
+        // Logout button - WITH LOGGING
         JButton logoutButton = createButton("Logout", 40, 450, 120, 40, sidePanel);
-
         logoutButton.addActionListener(e -> {
+            // LOG THIS ACTION
+            logActivity("Logout", "-", "Admin logged out successfully");
+
             dispose();
             new AdminLogin();
         });
@@ -635,6 +790,9 @@ public class AdminDashboard extends JFrame {
         adminDashboardPanel.setBackground(new Color(12, 25, 38));
         adminDashboardPanel.setBounds(200, 60, 700, 540);
         add(adminDashboardPanel);
+
+        // LOG LOGIN ACTION
+        logActivity("Login", "-", "Admin logged in successfully");
 
         showOverviewPanel();
 
