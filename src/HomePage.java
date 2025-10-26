@@ -9,6 +9,27 @@ import org.jfree.data.category.DefaultCategoryDataset;
 
 class HomePage extends JFrame {
 
+    // Database credentials
+    String url = EnvLoader.get("DB_URL");
+    String user = EnvLoader.get("DB_USER");
+    String password = EnvLoader.get("DB_PASSWORD");
+
+    // Updates activity
+    private void logActivity(String action, String targetUser, String adminUsername, String remarks) {
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            String sql = "INSERT INTO activities (action, target_user, admin, remarks) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement pst = conn.prepareStatement(sql)) {
+                pst.setString(1, action);
+                pst.setString(2, targetUser);
+                pst.setString(3, adminUsername);
+                pst.setString(4, remarks);
+                pst.executeUpdate();
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error logging activity: " + ex.getMessage());
+        }
+    }
+
     // Create labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel, int fontSize) {
         JLabel label = new JLabel(text);
@@ -55,11 +76,6 @@ class HomePage extends JFrame {
 
     HomePage(String username) {
 
-        // DB Credentials
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String password = EnvLoader.get("DB_PASSWORD");
-
         // Home page panel
         JPanel homePagePanel = new JPanel(null);
         homePagePanel.setBackground(new Color(8, 20, 30));
@@ -94,7 +110,6 @@ class HomePage extends JFrame {
         transferButton.addActionListener(a -> new TransferPage(username));
 
         // VirtualCard button
-        // Change this line (line 81 in your code):
         JButton virtualCardButton = createButton("Virtual Card", 40, 270, 150, 42, homePagePanel);
         virtualCardButton.addActionListener(a -> new VirtualCard(username));
 
@@ -116,15 +131,15 @@ class HomePage extends JFrame {
         try (Connection con = DriverManager.getConnection(url, user, password)) {
             String chartSql = "SELECT type, SUM(amount) AS total FROM transactions WHERE username=? AND MONTH(date) = MONTH(CURRENT_DATE) GROUP BY type";
             try (PreparedStatement pst = con.prepareStatement(chartSql)){
-                    pst.setString(1, username);
+                pst.setString(1, username);
 
-                    try (ResultSet rs = pst.executeQuery()) {
-                        while (rs.next()) {
-                            String type = rs.getString("type");
-                            double total = rs.getDouble("total");
-                            pieDataset.setValue(type, total);
-                        }
+                try (ResultSet rs = pst.executeQuery()) {
+                    while (rs.next()) {
+                        String type = rs.getString("type");
+                        double total = rs.getDouble("total");
+                        pieDataset.setValue(type, total);
                     }
+                }
 
             } catch (SQLException pstEx) {
                 pstEx.printStackTrace();
@@ -152,7 +167,13 @@ class HomePage extends JFrame {
 
         // Logout button
         JButton logoutButton = createButton("Logout", 620, 510, 120, 42, homePagePanel);
-        logoutButton.addActionListener(a -> { new LandingPage(); dispose(); });
+        logoutButton.addActionListener(a -> {
+            logActivity("User Logout", username, "System",
+                    "User logged out successfully");
+
+            new LandingPage();
+            dispose();
+        });
 
         // Recent transaction label
         createLabel("Recent Transactions", 40, 325, 300, 25, homePagePanel, 17);
