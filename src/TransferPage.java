@@ -4,6 +4,27 @@ import java.sql.*;
 
 class TransferPage extends JFrame {
 
+    // Database credentials
+    String url = EnvLoader.get("DB_URL");
+    String user = EnvLoader.get("DB_USER");
+    String password = EnvLoader.get("DB_PASSWORD");
+
+    // Updates activities
+    private void logActivity(String action, String targetUser, String adminUsername, String remarks) {
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            String sql = "INSERT INTO activities (action, target_user, admin, remarks) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement pst = conn.prepareStatement(sql)) {
+                pst.setString(1, action);
+                pst.setString(2, targetUser);
+                pst.setString(3, adminUsername);
+                pst.setString(4, remarks);
+                pst.executeUpdate();
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error logging activity: " + ex.getMessage());
+        }
+    }
+
     // Create labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
         JLabel label = new JLabel(text);
@@ -48,11 +69,6 @@ class TransferPage extends JFrame {
     // Constructor
     TransferPage(String username) {
 
-        // DB credentials
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String password = EnvLoader.get("DB_PASSWORD");
-
         // Transfer panel
         JPanel transferPanel = new JPanel(null);
         transferPanel.setBackground(new Color(8, 20, 30));
@@ -64,6 +80,8 @@ class TransferPage extends JFrame {
         titleLabel.setForeground(new Color(0, 230, 255));
         titleLabel.setBounds(0, 20, 800, 40);
         transferPanel.add(titleLabel);
+
+        logActivity("View Transfer Page", username, "System", "User accessed transfer funds page");
 
         double currentBalance = fetchBalance(username);
 
@@ -92,13 +110,15 @@ class TransferPage extends JFrame {
         JLabel statusLabel = createLabel("Status: Waiting for action...", 250, 280, 400, 30, transferPanel);
         statusLabel.setForeground(new Color(0, 200, 255));
 
-        // Transfer button
+        // Transfer button - WITH LOGGING
         JButton transferButton = createButton("Transfer", 250, 330, 120, 42, transferPanel);
 
-        // Back button
+        // Back button - WITH LOGGING
         JButton backButton = createButton("Back", 400, 330, 120, 42, transferPanel);
 
         backButton.addActionListener(e -> {
+            logActivity("Exit Transfer Page", username, "System", "User left transfer funds page");
+
             new HomePage(username);
             dispose();
         });
@@ -110,11 +130,18 @@ class TransferPage extends JFrame {
 
             if (receiver.isEmpty() || amtStr.isEmpty()) {
                 statusLabel.setText("❌ Fields cannot be empty");
+
+                logActivity("Transfer Failed", username, "System",
+                        "Validation error: Empty fields (receiver or amount)");
                 return;
             }
 
             if (!userExists(receiver)) {
                 statusLabel.setText("❌ Receiver does not exist");
+
+                // LOG: Receiver not found
+                logActivity("Transfer Failed", username, "System",
+                        "Receiver user '" + receiver + "' does not exist");
                 return;
             }
 
@@ -123,12 +150,28 @@ class TransferPage extends JFrame {
                 amount = Double.parseDouble(amtStr);
             } catch (NumberFormatException ex) {
                 statusLabel.setText("❌ Invalid amount");
+
+                logActivity("Transfer Failed", username, "System",
+                        "Invalid amount format: " + amtStr);
                 return;
             }
 
             double senderBalance = fetchBalance(username);
-            if (amount <= 0 || amount > senderBalance) {
-                statusLabel.setText("❌ Invalid or insufficient balance");
+            if (amount <= 0) {
+                statusLabel.setText("❌ Invalid amount");
+
+                // LOG: Invalid amount (zero or negative)
+                logActivity("Transfer Failed", username, "System",
+                        "Invalid amount: ₹" + String.format("%.2f", amount) + " (must be positive)");
+                return;
+            }
+
+            if (amount > senderBalance) {
+                statusLabel.setText("❌ Insufficient balance");
+
+                logActivity("Transfer Failed", username, "System",
+                        "Insufficient balance. Required: ₹" + String.format("%.2f", amount) +
+                                ", Available: ₹" + String.format("%.2f", senderBalance));
                 return;
             }
 
@@ -181,7 +224,16 @@ class TransferPage extends JFrame {
                 }
 
                 con.commit();
-                statusLabel.setText("Transfer Successful");
+
+                String transferDetails = "Successfully transferred ₹" + String.format("%.2f", amount) +
+                        " to " + receiver + ". " +
+                        "Sender new balance: ₹" + String.format("%.2f", senderBalance - amount);
+                if (!note.isEmpty()) {
+                    transferDetails += " | Note: " + note;
+                }
+                logActivity("Transfer Success", username, "System", transferDetails);
+
+                statusLabel.setText("✅ Transfer Successful");
                 balanceLabel.setText("Current Balance: ₹" + (senderBalance - amount));
                 receiverTextField.setText("");
                 amountTextField.setText("");
@@ -189,6 +241,10 @@ class TransferPage extends JFrame {
 
             } catch (Exception ex) {
                 statusLabel.setText("❌ Transfer failed: " + ex.getMessage());
+
+                logActivity("Transfer Failed", username, "System",
+                        "Database error during transfer to " + receiver +
+                                " (₹" + String.format("%.2f", amount) + "): " + ex.getMessage());
             }
         });
 
@@ -202,10 +258,6 @@ class TransferPage extends JFrame {
 
     // Checks user
     private boolean userExists(String username) {
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String password = EnvLoader.get("DB_PASSWORD");
-
         try (Connection con = DriverManager.getConnection(url, user, password)) {
             String sql = "SELECT username FROM users WHERE username=?";
             try (PreparedStatement pst = con.prepareStatement(sql)) {
@@ -221,10 +273,6 @@ class TransferPage extends JFrame {
 
     // Fetches balance
     private double fetchBalance(String username) {
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String password = EnvLoader.get("DB_PASSWORD");
-
         double balance = 0.0;
         try (Connection con = DriverManager.getConnection(url, user, password)) {
             String sql = "SELECT balance FROM users WHERE username=?";
