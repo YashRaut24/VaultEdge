@@ -4,6 +4,27 @@ import java.sql.*;
 
 class AdminLogin extends JFrame {
 
+    // Database credentials
+    String url = EnvLoader.get("DB_URL");
+    String user = EnvLoader.get("DB_USER");
+    String password = EnvLoader.get("DB_PASSWORD");
+
+    // Updates activity
+    private void logActivity(String action, String targetUser, String adminUsername, String remarks) {
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            String sql = "INSERT INTO activities (action, target_user, admin, remarks) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement pst = conn.prepareStatement(sql)) {
+                pst.setString(1, action);
+                pst.setString(2, targetUser);
+                pst.setString(3, adminUsername);
+                pst.setString(4, remarks);
+                pst.executeUpdate();
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error logging activity: " + ex.getMessage());
+        }
+    }
+
     // Creates labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
         JLabel label = new JLabel(text);
@@ -57,7 +78,6 @@ class AdminLogin extends JFrame {
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         button.setBounds(x, y, width, height);
-
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent e) {
                 button.setBorder(BorderFactory.createLineBorder(new Color(0, 255, 255), 3));
@@ -66,17 +86,11 @@ class AdminLogin extends JFrame {
                 button.setBorder(BorderFactory.createLineBorder(new Color(0, 230, 255), 2));
             }
         });
-
         panel.add(button);
         return button;
     }
 
-        AdminLogin() {
-
-        // DB Credentials
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String password = EnvLoader.get("DB_PASSWORD");
+    AdminLogin() {
 
         // AdminLogin Page
         JPanel adminLoginPanel = new JPanel(null);
@@ -115,36 +129,38 @@ class AdminLogin extends JFrame {
         // Back Button
         JButton backButton = createButton("Back", 310, 360, 110, 40, adminLoginPanel);
 
-            loginButton.addActionListener(a -> {
-                String username = usernameTextField.getText();
-                String passwordText = new String(passwordTextField.getPassword());
+        loginButton.addActionListener(a -> {
+            String username = usernameTextField.getText();
+            String passwordText = new String(passwordTextField.getPassword());
 
-                String loginSqlQuery = "SELECT * FROM admin_login WHERE username=? AND password=?";
+            String loginSqlQuery = "SELECT * FROM admin_login WHERE username=? AND password=?";
 
-                try (Connection con = DriverManager.getConnection(url, user, password)) {
-                    // Nested try-with-resources for PreparedStatement
-                    try (PreparedStatement pst = con.prepareStatement(loginSqlQuery)) {
-                        pst.setString(1, username);
-                        pst.setString(2, passwordText);
+            try (Connection con = DriverManager.getConnection(url, user, password)) {
+                try (PreparedStatement pst = con.prepareStatement(loginSqlQuery)) {
+                    pst.setString(1, username);
+                    pst.setString(2, passwordText);
 
-                        try (ResultSet rs = pst.executeQuery()) {
-                            if (rs.next()) {
-                                JOptionPane.showMessageDialog(null, "Admin Login Successful!");
-                                new AdminDashboard(username);
-                                dispose();
-                            } else {
-                                JOptionPane.showMessageDialog(null, "Invalid credentials! Try again.");
-                            }
+                    try (ResultSet rs = pst.executeQuery()) {
+                        if (rs.next()) {
+                            logActivity("Login", "-", username, "Admin logged in successfully");
+
+                            JOptionPane.showMessageDialog(null, "Admin Login Successful!");
+                            new AdminDashboard(username);
+                            dispose();
+                        } else {
+                            logActivity("Failed Login Attempt", "-", username, "Invalid credentials entered");
+
+                            JOptionPane.showMessageDialog(null, "Invalid credentials! Try again.");
                         }
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    JOptionPane.showMessageDialog(null, "Database Error: " + e.getMessage());
                 }
-            });
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(null, "Database Error: " + e.getMessage());
+            }
+        });
 
-
-            backButton.addActionListener(a -> {
+        backButton.addActionListener(a -> {
             new LandingPage();
             dispose();
         });
