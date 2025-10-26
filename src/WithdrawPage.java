@@ -4,6 +4,27 @@ import java.sql.*;
 
 class Withdraw extends JFrame {
 
+    // Database credentials
+    String url = EnvLoader.get("DB_URL");
+    String user = EnvLoader.get("DB_USER");
+    String password = EnvLoader.get("DB_PASSWORD");
+
+    // Updates activities
+    private void logActivity(String action, String targetUser, String adminUsername, String remarks) {
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            String sql = "INSERT INTO activities (action, target_user, admin, remarks) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement pst = conn.prepareStatement(sql)) {
+                pst.setString(1, action);
+                pst.setString(2, targetUser);
+                pst.setString(3, adminUsername);
+                pst.setString(4, remarks);
+                pst.executeUpdate();
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error logging activity: " + ex.getMessage());
+        }
+    }
+
     // Creates labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
         JLabel label = new JLabel(text);
@@ -62,11 +83,6 @@ class Withdraw extends JFrame {
     // Constructor
     Withdraw(String username) {
 
-        // DB Credentials
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String password = EnvLoader.get("DB_PASSWORD");
-
         // Withdraw panel
         JPanel withrawPanel = new JPanel(null);
         withrawPanel.setBackground(new Color(8, 20, 30));
@@ -79,6 +95,8 @@ class Withdraw extends JFrame {
         titleLabel.setBounds(0, 25, 800, 40);
         withrawPanel.add(titleLabel);
 
+        logActivity("View Withdraw Page", username, "System", "User accessed withdraw money page");
+
         double currentBalance = fetchBalance(username);
         JLabel balanceLabel = createLabel("Current Balance: ₹" + currentBalance, 270, 90, 300, 30, withrawPanel);
 
@@ -90,6 +108,7 @@ class Withdraw extends JFrame {
 
         // Withdrawal label
         createLabel("Withdrawal Method:", 180, 210, 200, 30, withrawPanel);
+
         String[] methods = {"VaultEdge Wallet", "UPI Transfer", "Virtual Card Transfer"};
 
         // Withdrawal method dropdown
@@ -114,13 +133,18 @@ class Withdraw extends JFrame {
                 new Color(0, 230, 255), Color.WHITE, new Color(255, 51, 51));
 
         cancelButton.addActionListener(a -> {
+            logActivity("Cancel Withdraw", username, "System", "User cancelled withdrawal and returned to home page");
+
             new HomePage(username);
             dispose();
         });
 
         withdrawButton.addActionListener(a -> {
             String withdrawAmmount = amountTextField.getText().trim();
+
             if (withdrawAmmount.isEmpty()) {
+                logActivity("Withdraw Failed", username, "System", "Validation error: Amount field is empty");
+
                 JOptionPane.showMessageDialog(null, "Please enter an amount");
                 return;
             }
@@ -133,11 +157,18 @@ class Withdraw extends JFrame {
 
                 if (amount <= 0) {
                     statusLabel.setText("Status: Invalid amount ❌");
+
+                    logActivity("Withdraw Failed", username, "System",
+                            "Invalid amount: ₹" + String.format("%.2f", amount) + " (must be positive)");
                     return;
                 }
 
                 if (amount > balance) {
                     statusLabel.setText("Status: Insufficient Balance ❌");
+
+                    logActivity("Withdraw Failed", username, "System",
+                            "Insufficient balance. Required: ₹" + String.format("%.2f", amount) +
+                                    ", Available: ₹" + String.format("%.2f", balance));
                     return;
                 }
 
@@ -168,6 +199,15 @@ class Withdraw extends JFrame {
 
                     con.commit();
 
+                    String withdrawalDetails = "Successfully withdrew ₹" + String.format("%.2f", amount) +
+                            " via " + method + ". " +
+                            "Previous balance: ₹" + String.format("%.2f", balance) +
+                            ", New balance: ₹" + String.format("%.2f", balance - amount);
+                    if (!note.isEmpty()) {
+                        withdrawalDetails += " | Note: " + note;
+                    }
+                    logActivity("Withdraw Success", username, "System", withdrawalDetails);
+
                     amountTextField.setText("");
                     noteTextField.setText("");
                     balanceLabel.setText("Current Balance: ₹" + (balance - amount));
@@ -175,11 +215,19 @@ class Withdraw extends JFrame {
 
                 } catch (Exception e) {
                     statusLabel.setText("Status: Withdrawal Failed ❌");
+
+                    logActivity("Withdraw Failed", username, "System",
+                            "Database error during withdrawal of ₹" + String.format("%.2f", amount) +
+                                    " via " + method + ": " + e.getMessage());
+
                     JOptionPane.showMessageDialog(null, e.getMessage());
                 }
 
             } catch (NumberFormatException e) {
                 statusLabel.setText("Status: Invalid input ❌");
+
+                logActivity("Withdraw Failed", username, "System",
+                        "Invalid amount format: " + withdrawAmmount);
             }
         });
 
@@ -193,10 +241,6 @@ class Withdraw extends JFrame {
 
     // Fetch user balance
     private double fetchBalance(String username) {
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String password = EnvLoader.get("DB_PASSWORD");
-
         double balance = 0.0;
         try (Connection con = DriverManager.getConnection(url, user, password)) {
             String sql = "SELECT balance FROM users WHERE username = ?";
@@ -213,10 +257,6 @@ class Withdraw extends JFrame {
 
     // Update withdrawal total
     private void updateTotalWithdrawals(String username, double withdrawalAmount) {
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String password = EnvLoader.get("DB_PASSWORD");
-
         try (Connection con = DriverManager.getConnection(url, user, password)) {
             String updateSQL = "UPDATE transaction_summary SET total_withdrawals = total_withdrawals + ?, last_updated = CURRENT_TIMESTAMP WHERE username = ?";
             try (PreparedStatement pst = con.prepareStatement(updateSQL)) {
