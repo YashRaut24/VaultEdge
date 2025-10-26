@@ -4,6 +4,27 @@ import java.sql.*;
 
 class Profile extends JFrame {
 
+    // Database credentials
+    String url = EnvLoader.get("DB_URL");
+    String user = EnvLoader.get("DB_USER");
+    String password = EnvLoader.get("DB_PASSWORD");
+
+    // Updates activities
+    private void logActivity(String action, String targetUser, String adminUsername, String remarks) {
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            String sql = "INSERT INTO activities (action, target_user, admin, remarks) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement pst = conn.prepareStatement(sql)) {
+                pst.setString(1, action);
+                pst.setString(2, targetUser);
+                pst.setString(3, adminUsername);
+                pst.setString(4, remarks);
+                pst.executeUpdate();
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error logging activity: " + ex.getMessage());
+        }
+    }
+
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Segoe UI", Font.PLAIN, 16));
@@ -44,11 +65,6 @@ class Profile extends JFrame {
     }
 
     Profile(String username) {
-
-        // DB Credentials
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String password = EnvLoader.get("DB_PASSWORD");
 
         // Profile panel
         JPanel profilePanel = new JPanel(null);
@@ -98,14 +114,18 @@ class Profile extends JFrame {
         // Last login TextField
         JTextField lastLoginField = createTextField(300, 350, 300, 30, profilePanel);
 
-        // Upload button
+        logActivity("View Profile", username, "System", "User accessed profile settings page");
+
+        // Update button - WITH LOGGING
         JButton updateButton = createButton("Update Info", 180, 410, 150, 42, profilePanel);
 
         updateButton.addActionListener(a -> {
             nameTextField.setEditable(true);
             emailTextField.setEditable(true);
             phoneTextField.setEditable(true);
+
             int result = JOptionPane.showConfirmDialog(null, "Save changes?", "Confirm", JOptionPane.YES_NO_OPTION);
+
             if (result == JOptionPane.YES_OPTION) {
                 try (Connection con = DriverManager.getConnection(url, user, password)) {
                     String sql = "UPDATE users SET fullname=?, email=?, phone=? WHERE username=?";
@@ -115,22 +135,34 @@ class Profile extends JFrame {
                         pst.setString(3, phoneTextField.getText());
                         pst.setString(4, username);
                         pst.executeUpdate();
+
+                        String updateDetails = "Updated profile info - Name: " + nameTextField.getText() +
+                                ", Email: " + emailTextField.getText() +
+                                ", Phone: " + phoneTextField.getText();
+                        logActivity("Update Profile", username, "System", updateDetails);
+
                         JOptionPane.showMessageDialog(null, "Profile updated successfully!");
                     }
                 } catch (Exception e) {
+                    logActivity("Update Profile Failed", username, "System",
+                            "Error updating profile: " + e.getMessage());
                     JOptionPane.showMessageDialog(null, e.getMessage());
                 }
+            } else {
+                logActivity("Update Profile Cancelled", username, "System",
+                        "User cancelled profile update");
             }
+
             nameTextField.setEditable(false);
             emailTextField.setEditable(false);
             phoneTextField.setEditable(false);
         });
 
-        // Change button
         JButton changePasswordButton = createButton("Change Password", 350, 410, 200, 42, profilePanel);
 
         changePasswordButton.addActionListener(a -> {
             String newPass = JOptionPane.showInputDialog("Enter new password:");
+
             if (newPass != null && !newPass.isEmpty()) {
                 try (Connection con = DriverManager.getConnection(url, user, password)) {
                     String sql = "UPDATE users SET password=? WHERE username=?";
@@ -138,39 +170,63 @@ class Profile extends JFrame {
                         pst.setString(1, newPass);
                         pst.setString(2, username);
                         pst.executeUpdate();
+
+                        logActivity("Change Password", username, "System",
+                                "User successfully changed password");
+
                         JOptionPane.showMessageDialog(null, "Password changed successfully!");
                     }
                 } catch (Exception e) {
+                    logActivity("Change Password Failed", username, "System",
+                            "Error changing password: " + e.getMessage());
                     JOptionPane.showMessageDialog(null, e.getMessage());
                 }
+            } else {
+                logActivity("Change Password Cancelled", username, "System",
+                        "User cancelled password change");
             }
         });
 
-        // Delete button
+        // Delete account button - WITH LOGGING
         JButton deleteButton = createButton("Delete Account", 180, 470, 150, 42, profilePanel);
 
         deleteButton.addActionListener(a -> {
-            int result = JOptionPane.showConfirmDialog(null, "Are you sure you want to delete your account?", "Confirm", JOptionPane.YES_NO_OPTION);
+            int result = JOptionPane.showConfirmDialog(null,
+                    "Are you sure you want to delete your account?",
+                    "Confirm",
+                    JOptionPane.YES_NO_OPTION);
+
             if (result == JOptionPane.YES_OPTION) {
                 try (Connection con = DriverManager.getConnection(url, user, password)) {
                     String sql = "DELETE FROM users WHERE username=?";
                     try (PreparedStatement pst = con.prepareStatement(sql)) {
                         pst.setString(1, username);
                         pst.executeUpdate();
+
+                        logActivity("Delete Account", username, "System",
+                                "User account permanently deleted");
+
                         JOptionPane.showMessageDialog(null, "Account deleted successfully!");
                         new LandingPage();
                         dispose();
                     }
                 } catch (Exception e) {
+                    logActivity("Delete Account Failed", username, "System",
+                            "Error deleting account: " + e.getMessage());
                     JOptionPane.showMessageDialog(null, e.getMessage());
                 }
+            } else {
+                logActivity("Delete Account Cancelled", username, "System",
+                        "User cancelled account deletion");
             }
         });
 
-        // Back button
+        // Back button - WITH LOGGING
         JButton backButton = createButton("Back", 350, 470, 200, 42, profilePanel);
 
         backButton.addActionListener(a -> {
+            logActivity("Exit Profile", username, "System", "User left profile settings page");
+
             new HomePage(username);
             dispose();
         });
@@ -190,6 +246,8 @@ class Profile extends JFrame {
                 }
             }
         } catch (Exception e) {
+            logActivity("Load Profile Failed", username, "System",
+                    "Error loading profile data: " + e.getMessage());
             JOptionPane.showMessageDialog(null, e.getMessage());
         }
 
