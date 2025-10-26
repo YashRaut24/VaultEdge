@@ -4,6 +4,27 @@ import java.sql.*;
 
 class DepositPage extends JFrame {
 
+    // Database credentials
+    String url = EnvLoader.get("DB_URL");
+    String user = EnvLoader.get("DB_USER");
+    String password = EnvLoader.get("DB_PASSWORD");
+
+    // Updates activity
+    private void logActivity(String action, String targetUser, String adminUsername, String remarks) {
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            String sql = "INSERT INTO activities (action, target_user, admin, remarks) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement pst = conn.prepareStatement(sql)) {
+                pst.setString(1, action);
+                pst.setString(2, targetUser);
+                pst.setString(3, adminUsername);
+                pst.setString(4, remarks);
+                pst.executeUpdate();
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error logging activity: " + ex.getMessage());
+        }
+    }
+
     // Create TextFields
     private JTextField createTextField(int x, int y, int width, int height, JPanel panel) {
         JTextField field = new JTextField();
@@ -48,11 +69,6 @@ class DepositPage extends JFrame {
 
     // Constructor
     DepositPage(String username) {
-
-        // Database credentials
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String password = EnvLoader.get("DB_PASSWORD");
 
         // Deposit page panel
         JPanel depositPagePanel = new JPanel(null);
@@ -136,6 +152,12 @@ class DepositPage extends JFrame {
 
             try {
                 double amount = Double.parseDouble(input);
+
+                if (amount <= 0) {
+                    JOptionPane.showMessageDialog(null, "Amount must be greater than zero");
+                    return;
+                }
+
                 double total = finalBalance + amount;
 
                 try (Connection con = DriverManager.getConnection(url, user, password)) {
@@ -150,17 +172,29 @@ class DepositPage extends JFrame {
 
                     updateTotalDeposits(username, amount);
 
+                    logActivity("Deposit", username, "System",
+                            "Deposited ₹" + amount + " via " + method + ". New balance: ₹" + total);
+
                     statusLabel.setText("Deposit Successful via " + method);
                     balanceLabel.setText("Current Balance: ₹" + total);
                     amountField.setText("");
                     noteTextField.setText("");
 
+                    JOptionPane.showMessageDialog(null,
+                            "Deposit Successful!\nAmount: ₹" + amount + "\nNew Balance: ₹" + total);
+
                 } catch (Exception ex) {
+                    logActivity("Deposit Failed", username, "System",
+                            "Failed to deposit ₹" + amount + ". Error: " + ex.getMessage());
+
                     JOptionPane.showMessageDialog(null, ex.getMessage());
                 }
 
             } catch (NumberFormatException nfe) {
                 JOptionPane.showMessageDialog(null, "Invalid amount entered");
+
+                logActivity("Invalid Deposit Attempt", username, "System",
+                        "User entered invalid amount: " + input);
             }
         });
 
@@ -174,10 +208,6 @@ class DepositPage extends JFrame {
 
     // Updates passbook
     void updatePassbook(String username, String desc, double amount, double balance, String note) {
-
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String password = EnvLoader.get("DB_PASSWORD");
 
         try (Connection con = DriverManager.getConnection(url, user, password)) {
             String passbookSql = "INSERT INTO transactions(username, description, amount, balance, note, type, balance_after) VALUES(?,?,?,?,?,?,?)";
@@ -198,9 +228,6 @@ class DepositPage extends JFrame {
 
     // Updates total deposits
     void updateTotalDeposits(String username, double depositAmount) {
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String password = EnvLoader.get("DB_PASSWORD");
 
         try (Connection con = DriverManager.getConnection(url, user, password)) {
             String updateDepositSQL = "UPDATE transaction_summary SET total_deposits = total_deposits + ?, last_updated = CURRENT_TIMESTAMP WHERE username = ?";
