@@ -4,6 +4,27 @@ import java.sql.*;
 
 class CardPayment extends JFrame {
 
+    // Database credentials
+    String url = EnvLoader.get("DB_URL");
+    String user = EnvLoader.get("DB_USER");
+    String password = EnvLoader.get("DB_PASSWORD");
+
+    // Updates activity
+    private void logActivity(String action, String targetUser, String adminUsername, String remarks) {
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            String sql = "INSERT INTO activities (action, target_user, admin, remarks) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement pst = conn.prepareStatement(sql)) {
+                pst.setString(1, action);
+                pst.setString(2, targetUser);
+                pst.setString(3, adminUsername);
+                pst.setString(4, remarks);
+                pst.executeUpdate();
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error logging activity: " + ex.getMessage());
+        }
+    }
+
     // Create labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel, int fontSize) {
         JLabel label = new JLabel(text);
@@ -47,11 +68,6 @@ class CardPayment extends JFrame {
 
     CardPayment(String username) {
 
-        // DB credentials
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String password = EnvLoader.get("DB_PASSWORD");
-
         // Card payment panel
         JPanel cardPaymentPanel = new JPanel(null);
         cardPaymentPanel.setBackground(new Color(8, 20, 30));
@@ -94,6 +110,9 @@ class CardPayment extends JFrame {
         // Back button
         JButton backButton = createButton("Back", 250, 510, 150, 40, cardPaymentPanel);
         backButton.addActionListener(e -> dispose());
+
+        logActivity("View Card Payment", username, "System",
+                "User accessed card payment page");
 
         try (Connection conn = DriverManager.getConnection(url, user, password)) {
 
@@ -151,6 +170,9 @@ class CardPayment extends JFrame {
                     return;
                 }
             } catch (NumberFormatException ex) {
+                logActivity("Invalid Card Payment", username, "System",
+                        "Invalid amount entered: " + amountText);
+
                 JOptionPane.showMessageDialog(this, "Invalid amount format");
                 return;
             }
@@ -166,6 +188,10 @@ class CardPayment extends JFrame {
                         double currentBalance = balanceResult.getDouble("balance");
 
                         if (currentBalance < paymentAmount) {
+                            logActivity("Card Payment Failed", username, "System",
+                                    "Insufficient balance. Required: ₹" + String.format("%.2f", paymentAmount) +
+                                            ", Available: ₹" + String.format("%.2f", currentBalance));
+
                             JOptionPane.showMessageDialog(this,
                                     "Insufficient balance!\nAvailable: ₹" + String.format("%.2f", currentBalance) +
                                             "\nRequired: ₹" + String.format("%.2f", paymentAmount));
@@ -193,6 +219,13 @@ class CardPayment extends JFrame {
                                 pst4.setDouble(4, newBalance);
                                 pst4.executeUpdate();
 
+                                String logDetails = "Card payment of ₹" + String.format("%.2f", paymentAmount) +
+                                        " to " + merchantName + ". New balance: ₹" + String.format("%.2f", newBalance);
+                                if (!description.isEmpty()) {
+                                    logDetails += " - " + description;
+                                }
+                                logActivity("Card Payment Success", username, "System", logDetails);
+
                                 String successMessage = "Payment Successful!\n\n" +
                                         "Merchant: " + merchantName + "\n" +
                                         "Amount Paid: ₹" + String.format("%.2f", paymentAmount) + "\n" +
@@ -207,7 +240,10 @@ class CardPayment extends JFrame {
                         JOptionPane.showMessageDialog(this, "User account not found!");
                     }
                 }
-                } catch (Exception ex) {
+            } catch (Exception ex) {
+                logActivity("Card Payment Error", username, "System",
+                        "Payment failed to " + merchantName + ". Error: " + ex.getMessage());
+
                 JOptionPane.showMessageDialog(this, "Payment Error: " + ex.getMessage());
             }
         });
