@@ -4,6 +4,27 @@ import java.sql.*;
 
 class CreditBillPayment extends JFrame {
 
+    // Database credentials
+    String url = EnvLoader.get("DB_URL");
+    String user = EnvLoader.get("DB_USER");
+    String password = EnvLoader.get("DB_PASSWORD");
+
+    // Updates Activity
+    private void logActivity(String action, String targetUser, String adminUsername, String remarks) {
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            String sql = "INSERT INTO activities (action, target_user, admin, remarks) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement pst = conn.prepareStatement(sql)) {
+                pst.setString(1, action);
+                pst.setString(2, targetUser);
+                pst.setString(3, adminUsername);
+                pst.setString(4, remarks);
+                pst.executeUpdate();
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error logging activity: " + ex.getMessage());
+        }
+    }
+
     // Create labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel, int fontSize) {
         JLabel label = new JLabel(text);
@@ -46,11 +67,6 @@ class CreditBillPayment extends JFrame {
     }
 
     CreditBillPayment(String username) {
-
-        // Database credentials
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String password = EnvLoader.get("DB_PASSWORD");
 
         // Credit bill payment panel
         JPanel creditBillPaymentPanel = new JPanel(null);
@@ -98,6 +114,9 @@ class CreditBillPayment extends JFrame {
         JButton backButton = createButton("Back", 250, 450, 150, 40, creditBillPaymentPanel);
         backButton.addActionListener(e -> dispose());
 
+        logActivity("View Credit Bill Payment", username, "System",
+                "User accessed credit card bill payment page");
+
         try (Connection conn = DriverManager.getConnection(url, user, password)) {
 
             String cardQuery = "SELECT credit_limit, credit_used FROM virtual_cards WHERE username=? AND status='active' AND card_type='CREDIT'";
@@ -107,6 +126,9 @@ class CreditBillPayment extends JFrame {
                 ResultSet cardResult = pst1.executeQuery();
 
                 if (!cardResult.next()) {
+                    logActivity("Credit Bill Access Failed", username, "System",
+                            "No active credit card found");
+
                     JOptionPane.showMessageDialog(this, "No active credit card found!");
                     dispose();
                     return;
@@ -116,6 +138,9 @@ class CreditBillPayment extends JFrame {
                 double creditUsed = cardResult.getDouble("credit_used");
 
                 if (creditUsed == 0) {
+                    logActivity("Credit Bill - No Balance", username, "System",
+                            "User checked credit bill but has no outstanding balance");
+
                     JOptionPane.showMessageDialog(this, "No outstanding balance! Your credit is clear.");
                     dispose();
                     return;
@@ -173,16 +198,27 @@ class CreditBillPayment extends JFrame {
                                 return;
                             }
                         } catch (NumberFormatException ex) {
+                            logActivity("Invalid Credit Payment", username, "System",
+                                    "Invalid amount entered: " + paymentText);
+
                             JOptionPane.showMessageDialog(this, "Invalid amount format");
                             return;
                         }
 
                         if (paymentAmount > finalTotalDue) {
+                            logActivity("Credit Payment Rejected", username, "System",
+                                    "Payment amount (₹" + String.format("%.2f", paymentAmount) +
+                                            ") exceeds total due (₹" + String.format("%.2f", finalTotalDue) + ")");
+
                             JOptionPane.showMessageDialog(this, "Payment amount exceeds total due!");
                             return;
                         }
 
                         if (finalAccountBalance < paymentAmount) {
+                            logActivity("Credit Payment Failed", username, "System",
+                                    "Insufficient balance. Required: ₹" + String.format("%.2f", paymentAmount) +
+                                            ", Available: ₹" + String.format("%.2f", finalAccountBalance));
+
                             JOptionPane.showMessageDialog(this, "Insufficient account balance!");
                             return;
                         }
@@ -219,6 +255,13 @@ class CreditBillPayment extends JFrame {
                                     transactionStmt.setDouble(4, newBalance);
                                     transactionStmt.executeUpdate();
 
+                                    String logDetails = "Credit bill paid: ₹" + String.format("%.2f", paymentAmount) +
+                                            " (Principal: ₹" + String.format("%.2f", principalPayment) +
+                                            ", Interest: ₹" + String.format("%.2f", interestPayment) +
+                                            "). Remaining credit used: ₹" + String.format("%.2f", newCreditUsed) +
+                                            ", New balance: ₹" + String.format("%.2f", newBalance);
+                                    logActivity("Credit Bill Payment Success", username, "System", logDetails);
+
                                     String successMessage = "Payment Successful!\n\n" +
                                             "Payment Amount: ₹" + String.format("%.2f", paymentAmount) + "\n" +
                                             "Principal Paid: ₹" + String.format("%.2f", principalPayment) + "\n" +
@@ -231,12 +274,16 @@ class CreditBillPayment extends JFrame {
                                 }
                             }
                         } catch (Exception ex) {
+                            logActivity("Credit Bill Payment Error", username, "System",
+                                    "Failed to process payment of ₹" + String.format("%.2f", paymentAmount) +
+                                            ". Error: " + ex.getMessage());
+
                             JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
                         }
                     });
                 }
             }
-          } catch (Exception ex) {
+        } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
         }
 
