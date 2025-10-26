@@ -4,6 +4,27 @@ import java.sql.*;
 
 class ExistingLoginPage extends JFrame {
 
+    // Database credentials
+    String url = EnvLoader.get("DB_URL");
+    String user = EnvLoader.get("DB_USER");
+    String passwords = EnvLoader.get("DB_PASSWORD");
+
+    // Updates activity
+    private void logActivity(String action, String targetUser, String adminUsername, String remarks) {
+        try (Connection conn = DriverManager.getConnection(url, user, passwords)) {
+            String sql = "INSERT INTO activities (action, target_user, admin, remarks) VALUES (?, ?, ?, ?)";
+            try (PreparedStatement pst = conn.prepareStatement(sql)) {
+                pst.setString(1, action);
+                pst.setString(2, targetUser);
+                pst.setString(3, adminUsername);
+                pst.setString(4, remarks);
+                pst.executeUpdate();
+            }
+        } catch (SQLException ex) {
+            System.err.println("Error logging activity: " + ex.getMessage());
+        }
+    }
+
     // Create labels
     private JLabel createLabel(String text, int x, int y, int width, int height, JPanel panel) {
         JLabel label = new JLabel(text);
@@ -63,11 +84,6 @@ class ExistingLoginPage extends JFrame {
 
     ExistingLoginPage() {
 
-        // DB Credentials
-        String url = EnvLoader.get("DB_URL");
-        String user = EnvLoader.get("DB_USER");
-        String passwords = EnvLoader.get("DB_PASSWORD");
-
         // Existing login page panel
         JPanel existingLoginPagePanel = new JPanel(null);
         existingLoginPagePanel.setBackground(new Color(8, 20, 30));
@@ -100,7 +116,7 @@ class ExistingLoginPage extends JFrame {
         // Password PassField
         JPasswordField passwordField = createPasswordField(150, 265, 300, 42, existingLoginPagePanel);
 
-        // Login button
+        // Login button - WITH ACTIVITY LOGGING
         JButton loginButton = createButton("Login", 200, 330, 200, 42, existingLoginPagePanel);
 
         // Back button
@@ -123,14 +139,23 @@ class ExistingLoginPage extends JFrame {
                     ResultSet rs = pst.executeQuery();
 
                     if (rs.next()) {
+                        logActivity("User Login", username, "System",
+                                "User logged in successfully");
+
                         JOptionPane.showMessageDialog(null, "Login Successful!");
                         new HomePage(username);
                         dispose();
                     } else {
+                        logActivity("Failed User Login", username, "System",
+                                "Invalid credentials entered");
+
                         JOptionPane.showMessageDialog(null, "Invalid username or password");
                     }
                 }
             } catch (Exception e) {
+                logActivity("Login Error", username, "System",
+                        "Database error during login: " + e.getMessage());
+
                 JOptionPane.showMessageDialog(null, "Database Error: " + e.getMessage());
             }
         });
